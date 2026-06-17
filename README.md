@@ -1,3 +1,3 @@
-# template-web
+# Battleship
 
-Creating a template for future web dev projects
+I'm going to implement the classic game ‘Battleship’ this time.

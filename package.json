@@ -1,5 +1,5 @@
 {
-  "name": "template-web",
+  "name": "battleship",
   "version": "1.0.0",
   "description": "Creating a template for future web dev projects",
   "main": "index.js",
@@ -12,27 +12,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/syafaatsaat/template-web.git"
+    "url": "git+https://github.com/syafaatsaat/battleship.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/syafaatsaat/template-web/issues"
+    "url": "https://github.com/syafaatsaat/battleship/issues"
   },
-  "homepage": "https://github.com/syafaatsaat/template-web#readme",
+  "homepage": "https://github.com/syafaatsaat/battleship#readme",
   "devDependencies": {
     "@babel/preset-env": "^7.29.5",
     "css-loader": "^7.1.4",
     "html-loader": "^5.1.0",
     "html-webpack-plugin": "^5.6.6",
-    "jest": "^30.4.2",
+    "jest": "^25.0.0",
     "prettier": "3.8.3",
     "style-loader": "^4.0.0",
     "webpack": "^5.105.4",
-    "webpack-cli": "^7.0.2",
-    "webpack-dev-server": "^5.2.3",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^1.16.5",
     "webpack-merge": "^6.0.1"
   }
 }
