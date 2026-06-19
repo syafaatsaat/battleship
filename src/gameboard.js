@@ -102,6 +102,10 @@ export class GameBoard {
     }
   }
 
+  randomizeShips() {
+    
+  }
+
   receiveAttack(posX, posY) {
     const tile = this.#board[posX][posY];
     if (tile[0] === 0) {
