@@ -23,10 +23,12 @@ export class Ship {
 
   getProperties() {
     return {
+      id: this.#id,
       startX: this.#startX,
       startY: this.#startY,
       isHorizontal: this.#isHorizontal,
-      length: this.#length
+      length: this.#length,
+      hasSunk: this.hasSunk()
     };
   }
 

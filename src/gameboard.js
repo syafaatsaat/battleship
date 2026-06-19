@@ -8,11 +8,33 @@ export class GameBoard {
 
   constructor() {
     this.#board = Array.from({length: BOARDSIZE}, () => 
-      Array(BOARDSIZE).fill(0),
+      Array(BOARDSIZE).fill([0]),
     );
-    console.log(this.#board);
 
     this.#setupShips();
+  }
+
+  getBoard() {
+    return this.#board;
+  }
+
+  printBoard() {
+    let boardText = "";
+    for (let x = 0; x < BOARDSIZE; ++x) {
+      let line = "";
+      for (let y = 0; y < BOARDSIZE; ++y) {
+        if (this.#board[x][y].length > 1) {
+          console.log(this.#board[x][y]);
+          line += "1";
+        }
+        else {
+          line += "0";
+        }
+      }
+      line += '\n';
+      boardText += line;
+    }
+    console.log(boardText);
   }
 
   #setupShips() {
@@ -40,8 +62,9 @@ export class GameBoard {
       if (
         x >= BOARDSIZE || 
         y >= BOARDSIZE || 
-        (this.#board[x][y] !== 0 && this.#board[x][y] !== this.#ships[id])
-      ) {
+        (this.#board[x][y].length === 2 && 
+          this.#board[x][y][1] !== this.#ships[id])
+        ) {
         canPlace = false;
         break;
       }
@@ -57,7 +80,7 @@ export class GameBoard {
       x = startX;
       y = startY;
       for (let i = 0; i < movingShipProp.length; ++i) {
-        this.#board[x][y] = this.#ships[id];
+        this.#board[x][y] = [0, this.#ships[id]];
 
         if (movingShipProp.isHorizontal) ++x;
         else ++y;
@@ -72,15 +95,25 @@ export class GameBoard {
   #clearPreviousSpots(ship) {
     for (let x = 0; x < BOARDSIZE; ++x) {
       for (let y = 0; y < BOARDSIZE; ++y) {
-        if (this.#board[x][y] === ship) {
-          this.#board[x][y] = 0;
+        if (this.#board[x][y].length > 1 && this.#board[x][y][1] === ship) {
+          this.#board[x][y] = [0];
         }
       }
     }
   }
 
   receiveAttack(posX, posY) {
+    const tile = this.#board[posX][posY];
+    if (tile[0] === 0) {
+      tile[0] = 1;
 
+      if (tile.length > 1) {
+        tile[1].hit();
+        return true;
+      }
+    }
+
+    return false;
   }
 
   printAllShips() {
