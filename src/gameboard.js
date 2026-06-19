@@ -7,8 +7,8 @@ export class GameBoard {
   #ships = [];
 
   constructor() {
-    this.#board = Array.from(
-      {length: BOARDSIZE}, () => Array(BOARDSIZE).fill(0)
+    this.#board = Array.from({length: BOARDSIZE}, () => 
+      Array(BOARDSIZE).fill(0),
     );
     console.log(this.#board);
 
@@ -32,58 +32,51 @@ export class GameBoard {
   }
 
   placeShip(id, startX, startY, isHorizontal) {
-    const shipToBePlaced = this.#ships[id];
-    let cannotPlace = false;
+    const movingShipProp = this.#ships[id].getProperties();
+    let x = startX, y = startY;
+    let canPlace = true;
 
-    this.#ships.forEach((ship, index) => {
-      if (index === id)
-        return;
+    for (let i = 0; i < movingShipProp.length; ++i) {
+      if (
+        x >= BOARDSIZE || 
+        y >= BOARDSIZE || 
+        (this.#board[x][y] !== 0 && this.#board[x][y] !== this.#ships[id])
+      ) {
+        canPlace = false;
+        break;
+      }
 
-      if (this.doShipsIntersect(shipToBePlaced, ship))
-        cannotPlace = true;
-    });
-
-    if (!cannotPlace) {
+      if (movingShipProp.isHorizontal) ++x;
+      else ++y;
+    }
+    
+    if (canPlace) {
       this.#ships[id].setProperties(startX, startY, isHorizontal);
+      this.#clearPreviousSpots(this.#ships[id]);
+
+      x = startX;
+      y = startY;
+      for (let i = 0; i < movingShipProp.length; ++i) {
+        this.#board[x][y] = this.#ships[id];
+
+        if (movingShipProp.isHorizontal) ++x;
+        else ++y;
+      }
+
       return true;
     }
 
     return false;
   }
 
-  doShipsIntersect(ship1, ship2) {
-    const ship1Prop = ship1.getProperties();
-    const ship2Prop = ship2.getProperties();
-
-    const a1X = ship1Prop.startX;
-    const a1Y = ship1Prop.startY;
-    const a2X = ship1Prop.isHorizontal 
-      ? ship1Prop.startX + ship1Prop.length 
-      : ship1Prop.startX;
-    const a2Y = ship1Prop.isHorizontal 
-      ? ship1Prop.startY 
-      : ship1Prop.startY + ship1Prop.length;
-    
-    const b1X = ship2Prop.startX;
-    const b1Y = ship2Prop.startY;
-    const b2X = ship2Prop.isHorizontal 
-      ? ship2Prop.startX + ship2Prop.length 
-      : ship2Prop.startX;
-    const b2Y = ship2Prop.isHorizontal 
-      ? ship2Prop.startY 
-      : ship2Prop.startY + ship2Prop.length;
-
-    const dxA = a2X - a1X;
-    const dyA = a2Y - a1Y;
-    const dxB = b2X - b1X;
-    const dyB = b2Y - b1Y;
-
-    const p0 = dyB * (b2X - a1X) - dxB * (b2Y - a1Y);
-    const p1 = dyB * (b2X - a2X) - dxB * (b2Y - a2Y);
-    const p2 = dyA * (a2X - b1X) - dxA * (a2Y - b1Y);
-    const p3 = dyA * (a2X - b2X) - dxA * (a2Y - b2Y);
-
-    return (p0 * p1 < 0) && (p2 * p3 < 0);
+  #clearPreviousSpots(ship) {
+    for (let x = 0; x < BOARDSIZE; ++x) {
+      for (let y = 0; y < BOARDSIZE; ++y) {
+        if (this.#board[x][y] === ship) {
+          this.#board[x][y] = 0;
+        }
+      }
+    }
   }
 
   receiveAttack(posX, posY) {
