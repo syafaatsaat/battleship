@@ -2,16 +2,31 @@ import { Ship } from "./ship.js";
 
 const BOARDSIZE = 10;
 
+class Tile {
+  constructor() {
+    this.ship = null;
+    this.isShot = false;
+  }
+}
+
 export class GameBoard {
   #board;
   #ships = [];
 
   constructor() {
-    this.#board = Array.from({length: BOARDSIZE}, () => 
-      Array(BOARDSIZE).fill([0]),
-    );
+    this.#resetBoard();
+    this.#resetShips();
+  }
 
-    this.#setupShips();
+  #resetBoard() {
+    this.#board = [];
+    for (let x = 0; x < BOARDSIZE; ++x) {
+      this.#board.push([]);
+      for (let y = 0; y < BOARDSIZE; ++y) {
+        const tile = new Tile();
+        this.#board[x].push(tile);
+      }
+    }
   }
 
   getBoard() {
@@ -20,15 +35,15 @@ export class GameBoard {
 
   printBoard() {
     let boardText = "";
+    const shipsLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
     for (let x = 0; x < BOARDSIZE; ++x) {
       let line = "";
       for (let y = 0; y < BOARDSIZE; ++y) {
-        if (this.#board[x][y].length > 1) {
-          console.log(this.#board[x][y]);
-          line += "1";
+        if (this.#board[x][y].ship === null) {
+          line += "_";
         }
         else {
-          line += "0";
+          line += shipsLetter[this.#board[x][y].ship.getID()];
         }
       }
       line += '\n';
@@ -37,11 +52,12 @@ export class GameBoard {
     console.log(boardText);
   }
 
-  #setupShips() {
+  #resetShips() {
     // ids: 0 to 3 (length = 1)
     // ids: 4 to 6 (length = 2)
     // id: 7 (length = 3)
     // ids: 8 and 9 (length = 4)
+    this.#ships = [];
     for (let i = 0; i < 10; ++i) {
       let length = 1;
       if (i > 7) length = 4;
@@ -62,9 +78,9 @@ export class GameBoard {
       if (
         x >= BOARDSIZE || 
         y >= BOARDSIZE || 
-        (this.#board[x][y].length === 2 && 
-          this.#board[x][y][1] !== this.#ships[id])
-        ) {
+        (this.#board[x][y].ship !== null &&
+        this.#board[x][y].ship !== this.#ships[id])
+      ) {
         canPlace = false;
         break;
       }
@@ -80,7 +96,7 @@ export class GameBoard {
       x = startX;
       y = startY;
       for (let i = 0; i < movingShipProp.length; ++i) {
-        this.#board[x][y] = [0, this.#ships[id]];
+        this.#board[x][y].ship = this.#ships[id];
 
         if (movingShipProp.isHorizontal) ++x;
         else ++y;
@@ -95,24 +111,68 @@ export class GameBoard {
   #clearPreviousSpots(ship) {
     for (let x = 0; x < BOARDSIZE; ++x) {
       for (let y = 0; y < BOARDSIZE; ++y) {
-        if (this.#board[x][y].length > 1 && this.#board[x][y][1] === ship) {
-          this.#board[x][y] = [0];
+        if (this.#board[x][y].ship === ship) {
+          this.#board[x][y].ship = null;
         }
       }
     }
   }
 
-  randomizeShips() {
+  #placeShipRandom(ship) {
+    let isHorizontal = [true, false][Math.floor(Math.random()*2)];
+    let max_col = BOARDSIZE, max_row = BOARDSIZE;
     
+    if (isHorizontal)
+      max_col -= (ship.getLength() - 1);
+    else 
+      max_row -= (ship.getLength() - 1);
+
+    if (max_row < 1 || max_col < 1)
+      return false;
+
+    const corner = [Math.floor(Math.random()*max_col), 
+                    Math.floor(Math.random()*max_row)];
+
+    let x = corner[0], y = corner[1];
+    for (let i = 0; i < ship.getLength(); ++i) {
+      if (isHorizontal) ++x;
+      else ++y;
+
+      if (x >= BOARDSIZE || y >= BOARDSIZE || this.#board[x][y].ship !== null)
+        return false;
+
+      this.#board[x][y].ship = ship;
+    }
+
+    ship.setProperties(corner[0], corner[1], isHorizontal);
+    return true;
+  }
+
+  randomizeShips() {
+    for (let attempt = 0; attempt < 1000; ++attempt) {
+      this.#resetBoard();
+      this.#resetShips();
+      let successful = true;
+      
+      this.#ships.forEach((ship) => {
+        if (!this.#placeShipRandom(ship))
+          successful = false;
+      });
+
+      if (successful)
+        return true;
+    }
+
+    return false;
   }
 
   receiveAttack(posX, posY) {
     const tile = this.#board[posX][posY];
-    if (tile[0] === 0) {
-      tile[0] = 1;
+    if (!tile.isShot) {
+      tile.isShot = true;
 
-      if (tile.length > 1) {
-        tile[1].hit();
+      if (tile.ship !== null) {
+        tile.ship.hit();
         return true;
       }
     }

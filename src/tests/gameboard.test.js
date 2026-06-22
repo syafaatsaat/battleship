@@ -40,12 +40,29 @@ test(
 
 test('Attacking empty spot returns false', () => {
   expect(gameboard.receiveAttack(6, 6)).toBeFalsy();
-  expect(gameboard.getBoard()[6][6][0]).toEqual(1);
+  expect(gameboard.getBoard()[6][6].isShot).toBeTruthy();
 });
 
 test('Attacking ship spot (length: 1) sinks the ship and returns true', () => {
-  expect(gameboard.getBoard()[7][7][1].hasSunk()).toBeFalsy();
+  expect(gameboard.getBoard()[7][7].ship.hasSunk()).toBeFalsy();
   expect(gameboard.receiveAttack(7, 7)).toBeTruthy();
-  expect(gameboard.getBoard()[7][7][1].hasSunk()).toBeTruthy();
+  expect(gameboard.getBoard()[7][7].ship.hasSunk()).toBeTruthy();
   //gameboard.printAllShips();
+});
+
+// RANDOMIZER FOR SHIPS -------------------------------------------------------
+
+test('Randomize attempt: 1, returns true', () => {
+  expect(gameboard.randomizeShips()).toBeTruthy();
+  gameboard.printBoard();
+});
+
+test('Randomize attempt: 2, returns true', () => {
+  expect(gameboard.randomizeShips()).toBeTruthy();
+  gameboard.printBoard();
+});
+
+test('Randomize attempt: 3, returns true', () => {
+  expect(gameboard.randomizeShips()).toBeTruthy();
+  gameboard.printBoard();
 });

@@ -15,6 +15,10 @@ export class Ship {
     return this.#id;
   }
 
+  getLength() {
+    return this.#length;
+  }
+
   setProperties(startX, startY, isHorizontal=true) {
     this.#startX = startX;
     this.#startY = startY;
