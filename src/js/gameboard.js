@@ -1,7 +1,5 @@
 import { Ship } from "./ship.js";
 
-const BOARDSIZE = 10;
-
 class Tile {
   constructor() {
     this.ship = null;
@@ -14,15 +12,16 @@ export class GameBoard {
   #ships = [];
 
   constructor() {
+    this.boardSize = 10;
     this.#resetBoard();
     this.#resetShips();
   }
 
   #resetBoard() {
     this.#board = [];
-    for (let x = 0; x < BOARDSIZE; ++x) {
+    for (let x = 0; x < this.boardSize; ++x) {
       this.#board.push([]);
-      for (let y = 0; y < BOARDSIZE; ++y) {
+      for (let y = 0; y < this.boardSize; ++y) {
         const tile = new Tile();
         this.#board[x].push(tile);
       }
@@ -36,9 +35,9 @@ export class GameBoard {
   printBoard() {
     let boardText = "";
     const shipsLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    for (let x = 0; x < BOARDSIZE; ++x) {
+    for (let x = 0; x < this.boardSize; ++x) {
       let line = "";
-      for (let y = 0; y < BOARDSIZE; ++y) {
+      for (let y = 0; y < this.boardSize; ++y) {
         if (this.#board[x][y].ship === null) {
           line += "_";
         }
@@ -76,8 +75,8 @@ export class GameBoard {
 
     for (let i = 0; i < movingShipProp.length; ++i) {
       if (
-        x >= BOARDSIZE || 
-        y >= BOARDSIZE || 
+        x >= this.boardSize || 
+        y >= this.boardSize || 
         (this.#board[x][y].ship !== null &&
         this.#board[x][y].ship !== this.#ships[id])
       ) {
@@ -109,8 +108,8 @@ export class GameBoard {
   }
 
   #clearPreviousSpots(ship) {
-    for (let x = 0; x < BOARDSIZE; ++x) {
-      for (let y = 0; y < BOARDSIZE; ++y) {
+    for (let x = 0; x < this.boardSize; ++x) {
+      for (let y = 0; y < this.boardSize; ++y) {
         if (this.#board[x][y].ship === ship) {
           this.#board[x][y].ship = null;
         }
@@ -120,7 +119,7 @@ export class GameBoard {
 
   #placeShipRandom(ship) {
     let isHorizontal = [true, false][Math.floor(Math.random()*2)];
-    let max_col = BOARDSIZE, max_row = BOARDSIZE;
+    let max_col = this.boardSize, max_row = this.boardSize;
     
     if (isHorizontal)
       max_col -= (ship.getLength() - 1);
@@ -138,7 +137,9 @@ export class GameBoard {
       if (isHorizontal) ++x;
       else ++y;
 
-      if (x >= BOARDSIZE || y >= BOARDSIZE || this.#board[x][y].ship !== null)
+      if (x >= this.boardSize || 
+          y >= this.boardSize || 
+          this.#board[x][y].ship !== null)
         return false;
 
       this.#board[x][y].ship = ship;

@@ -1,5 +1,5 @@
-import { Ship } from "../ship.js";
-import { GameBoard } from "../gameboard.js";
+import { Ship } from "../js/ship.js";
+import { GameBoard } from "../js/gameboard.js";
 
 const gameboard = new GameBoard();
 
