@@ -52,16 +52,13 @@ export class GameBoard {
   }
 
   #resetShips() {
-    // ids: 0 to 3 (length = 1)
-    // ids: 4 to 6 (length = 2)
-    // id: 7 (length = 3)
-    // ids: 8 and 9 (length = 4)
+    // id: 0 (2), 1 and 2 (3), 3 (4), 4 (5)
     this.#ships = [];
-    for (let i = 0; i < 10; ++i) {
-      let length = 1;
-      if (i > 7) length = 4;
-      else if (i > 6) length = 3;
-      else if (i > 3) length = 2;
+    for (let i = 0; i < 5; ++i) {
+      let length = 2;
+      if (i > 3) length = 5;
+      else if (i > 2) length = 4;
+      else if (i > 0) length = 3;
 
       const newShip = new Ship(i, length);
       this.#ships.push(newShip);
@@ -182,7 +179,7 @@ export class GameBoard {
   }
 
   printAllShips() {
-    for (let i = 0; i < 10; ++i) {
+    for (let i = 0; i < this.#ships.length; ++i) {
       console.log(i, "|", this.#ships[i].getProperties());
     }
   }

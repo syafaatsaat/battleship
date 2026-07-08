@@ -6,6 +6,97 @@
     <title>Document</title>
   </head>
   <body>
-    
+    <dialog id="main-menu" open>
+        <div class="main-menu-wrapper">
+            <p class="title">BATTLESHIP</p>
+            <div id="menu-buttons">
+                <button id="pvp-btn">PLAYER VS. PLAYER</button>
+                <button id="pvb-btn">PLAYER VS. BOT</button>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="pvp-menu">
+        <div class="menu-wrapper">
+            <p class="title">PLAYER VS. PLAYER</p>
+            <div id="name-form">
+                <p>ENTER PLAYER NAMES:</p>
+                <div>
+                    <label for="pvp-p1">X</label>
+                    <input type="text" id="pvp-p1" name="pvp-p1" 
+                        placeholder="PLAYER ONE"/>
+                </div>
+                <div>
+                    <label for="pvp-p2">O</label>
+                    <input type="text" id="pvp-p2" name="pvp-p2" 
+                        placeholder="PLAYER TWO"/>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <button id="back-pvp">BACK</button>
+                <button id="start-pvp">START</button>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="pvb-menu">
+        <div class="menu-wrapper">
+            <p class="title">PLAYER VS. BOT</p>
+            <div id="pvb-form">
+                <div class="form-row">
+                    <label for="pvb-player">ENTER YOUR NAME:</label>
+                    <input type="text" id="pvb-player" name="pvb-player" 
+                        placeholder="PLAYER"/>
+                </div>
+                <div class="form-row">
+                    <p>CHOOSE YOUR COLOR (BLUE GOES FIRST)</p>
+                    <label for="pvb-blue">
+                        <input type="radio" id="pvb-blue" name="pvb-color" 
+                            value="BLUE" checked>
+                        BLUE
+                    </label>
+                    <label for="pvb-red">
+                        <input type="radio" id="pvb-red" name="pvb-color" 
+                            value="RED">
+                        RED
+                    </label>
+                </div>
+                <div class="form-row">
+                    <p>DIFFICULTY</p>
+                    <label for="pvb-easy">
+                        <input type="radio" id="pvb-easy" name="pvb-difficulty" 
+                            value="EASY" checked>
+                        EASY
+                    </label>
+                    <label for="pvb-medium">
+                        <input type="radio" id="pvb-medium" name="pvb-difficulty" 
+                            value="MEDIUM">
+                        MEDIUM
+                    </label>
+                    <label for="pvb-hard">
+                        <input type="radio" id="pvb-hard" name="pvb-difficulty" 
+                            value="HARD">
+                        HARD
+                    </label>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <button id="back-pvb">BACK</button>
+                <button id="start-pvb">START</button>
+            </div>
+        </div>
+    </dialog>
+    <!-- <div id="main-content">
+        <div id="player-one">
+          <div class="scoreboard">
+            <p class="name">Player One</p>
+            <p class="score">0</p>
+          </div>
+          <div class="gameboard">
+
+          </div>
+          <div class="graveyard">
+            <p></p>
+          </div>
+        </div>
+    </div>   -->
   </body>
 </html>
