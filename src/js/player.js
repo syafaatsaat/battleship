@@ -3,20 +3,39 @@ import { GameBoard } from "./gameboard.js";
 export class Player {
   #name;
   #gameBoard;
-  #difficulty;
+  #isBot = false;
+  #difficulty = "easy";
   #botMovePool;
   
-  constructor(name, difficulty="easy") {
+  constructor(name="Player") {
     this.#name = name;
-    this.#gameBoard = new GameBoard();
-    this.#difficulty = difficulty;
+    this.reset();
+  }
 
-    if (name === "Bot") {
-      this.#setupBot();
-    }
+  setName(name) {
+    this.#name = name;
+  }
+
+  getName() {
+    return this.#name;
+  }
+
+  setDifficulty(difficulty) {
+    this.#difficulty = difficulty;
+  }
+
+  getDifficulty() {
+    return this.#difficulty;
+  }
+
+  reset() {
+    this.#gameBoard = new GameBoard();
   }
   
-  #setupBot() {
+  setupBot(difficulty) {
+    this.#isBot = true;
+    this.#difficulty = difficulty;
+
     this.#gameBoard.randomizeShips();
     this.#botMovePool = [...Array(this.#gameBoard.boardSize ** 2).keys()];
   }

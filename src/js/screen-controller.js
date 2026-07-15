@@ -1,12 +1,11 @@
-import { Ship } from "./ship.js";
-import { GameBoard } from "./gameboard.js";
-import { Player } from "./player.js";
+import { Application } from "./application.js";
 
 class DialogManager {
   constructor() {
     this.menuDialog = document.querySelector("#main-menu");
     this.pvpDialog = document.querySelector("#pvp-menu");
     this.pvbDialog = document.querySelector("#pvb-menu");
+    this.playerTurnDialog = document.querySelector("#player-turn-menu");
 
     this.setupEvents();
   }
@@ -38,11 +37,29 @@ class DialogManager {
   closePVBModal() {
     this.pvbDialog.close();
   }
+
+  openPlayerTurnModal() {
+    this.playerTurnDialog.show();
+  }
+
+  closePlayerTurnModal() {
+    this.playerTurnDialog.close();
+  }
+
+  setPlayerTurnText(name, isPlacementState=true) {
+    const playerTurnTitleElem = this.playerTurnDialog.querySelector(".title");
+    let title = `${name}'S TURN`;
+
+    if (isPlacementState)
+      title += ` TO PLACE SHIPS`;
+
+    playerTurnTitleElem.textContent = title;
+  }
 };
 
 class Renderer {
   constructor() {
-
+    
   }
 
   updateNames(isPVP=true) {
@@ -59,12 +76,10 @@ class Renderer {
 };
 
 export class ScreenController {
-  constructor() {
+  constructor(app) {
     this.dialogManager = new DialogManager();
     this.renderer = new Renderer();
-
-    this.player1 = new Player("Player");
-    this.player2 = new Player("Bot");
+    this.applicaton = app;
 
     this.pvpButton = document.querySelector("#pvp-btn");
     this.backPVPButton = document.querySelector("#back-pvp");
@@ -95,7 +110,7 @@ export class ScreenController {
       this.renderer.renderScoreboard();
       this.renderer.renderGameMenuButtons();
 
-      this.restartGame();
+      this.startGame();
     });
 
     this.pvbButton.addEventListener("click", () => {
@@ -115,11 +130,13 @@ export class ScreenController {
       this.renderer.renderScoreboard();
       this.renderer.renderGameMenuButtons();
 
-      this.restartGame();
+      this.startGame();
     });
   }
 
-  restartGame() {
+  startGame() {
 
   }
+
+
 };
