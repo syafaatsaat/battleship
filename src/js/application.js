@@ -12,14 +12,15 @@ export class Application {
     this.player1 = new Player(player1Name);
     this.player2 = new Player(player2Name);
 
+    this.currentState = "P1-Placement";
+
     if (isP1Bot) {
       this.player1.setupBot(difficulty);
+      this.currentState = "P2-Placement";
     }
     else {
       this.player2.setupBot(difficulty);
     }
-
-    this.currentState = "P1-Placement";
   }
 
   advanceState() {

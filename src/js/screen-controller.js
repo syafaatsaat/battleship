@@ -58,11 +58,23 @@ class DialogManager {
 };
 
 class Renderer {
-  constructor() {
-    
+  constructor(app) {
+    this.applicaton = app;
+
+    this.player1Div = document.querySelector("#player-one");
+    this.player1BoardDiv = this.player1Div.querySelector(".gameboard");
+    this.player1GraveDiv = this.player1Div.querySelector(".graveyard");
+
+    this.player2Div = document.querySelector("#player-two");
+    this.player2BoardDiv = this.player2Div.querySelector(".gameboard");
+    this.player2GraveDiv = this.player2Div.querySelector(".graveyard");
   }
 
   updateNames(isPVP=true) {
+
+  }
+
+  updateScoreboard() {
 
   }
 
@@ -73,13 +85,50 @@ class Renderer {
   renderGameMenuButtons() {
 
   }
+
+  renderGameBoards() {
+    const player1Board = this.applicaton.player1.getGameBoard().getBoard();
+    const player2Board = this.applicaton.player2.getGameBoard().getBoard();
+    const shipsLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+
+    for (let i = 0; i < player1Board.length; ++i) {
+      for (let j = 0; j < player1Board[i].length; ++j) {
+        const cellButton = document.createElement("button");
+        cellButton.classList.add("cell");
+        cellButton.dataset.cellCoords = i + "-" + j;
+        cellButton.textContent = " ";
+
+        if (player1Board[i][j].ship !== null) {
+          const shipID = player1Board[i][j].ship.getID();
+          cellButton.textContent = `${shipsLetter[shipID]}`;
+        }
+
+        if (player1Board[i][j].isShot) {
+          cellButton.disabled = true;
+        }
+
+        cellButton.addEventListener('click', () => {
+          player1Board.receiveAttack(i, j);
+          cellButton.disabled = true;
+          //updateScoreboard(result);
+
+          if (GameController.getActivePlayer().name === "BOT") {
+            console.log("AI run!");
+            aiTurn();
+          }
+        });
+
+        this.player1BoardDiv.appendChild(cellButton);
+      }
+    }
+  }
 };
 
 export class ScreenController {
   constructor(app) {
-    this.dialogManager = new DialogManager();
-    this.renderer = new Renderer();
     this.applicaton = app;
+    this.renderer = new Renderer(app);
+    this.dialogManager = new DialogManager();
 
     this.pvpButton = document.querySelector("#pvp-btn");
     this.backPVPButton = document.querySelector("#back-pvp");

@@ -20,6 +20,10 @@ export class Player {
     return this.#name;
   }
 
+  getGameBoard() {
+    return this.#gameBoard;
+  }
+
   setDifficulty(difficulty) {
     this.#difficulty = difficulty;
   }
@@ -30,6 +34,9 @@ export class Player {
 
   reset() {
     this.#gameBoard = new GameBoard();
+
+    // TO DELETE LATER --------------------------------------------------------
+    this.#gameBoard.randomizeShips();
   }
   
   setupBot(difficulty) {
