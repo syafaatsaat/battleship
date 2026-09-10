@@ -598,6 +598,19 @@ button:disabled {
   border: 1px solid var(--red);
 }
 
+.cell.draggable-ship {
+  cursor: grab;
+}
+
+.cell.draggable-ship:hover {
+  filter: brightness(1.3);
+}
+
+.cell.draggable-ship.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
 /* Hit cells */
 .cell.hit {
   background: var(--red) !important;

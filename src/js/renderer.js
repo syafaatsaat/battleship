@@ -149,6 +149,22 @@ export class Renderer {
             e.preventDefault();
             if (this.onCellClick) this.onCellClick(player, x, y, true, true);
           });
+
+          if (showShips && tile.ship !== null && !tile.isShot) {
+            cell.draggable = true;
+            cell.classList.add("draggable-ship");
+            cell.addEventListener("dragstart", (e) => {
+              const shipId = tile.ship.getID();
+              e.dataTransfer.setData("text/plain", String(shipId));
+              e.dataTransfer.effectAllowed = "move";
+              cell.classList.add("dragging");
+              if (this.onShipPickup) this.onShipPickup(shipId);
+            });
+            cell.addEventListener("dragend", () => {
+              cell.classList.remove("dragging");
+              if (this.onShipDragEnd) this.onShipDragEnd();
+            });
+          }
         }
 
         boardDiv.appendChild(cell);
