@@ -16,6 +16,7 @@ export class Renderer {
     this.onCellLeave = null;
     this.onShipDragStart = null;
     this.onShipDragEnd = null;
+    this.onShipPickup = null;
     this.onRandomize = null;
     this.onStartGame = null;
     this.onRotate = null;
@@ -332,7 +333,6 @@ export class Renderer {
 
       if (placedShipIds.includes(i)) {
         item.classList.add("placed");
-        item.draggable = false;
       }
 
       const label = document.createElement("div");
@@ -350,10 +350,6 @@ export class Renderer {
       item.appendChild(visual);
 
       item.addEventListener("dragstart", (e) => {
-        if (item.classList.contains("placed")) {
-          e.preventDefault();
-          return;
-        }
         item.classList.add("dragging");
         e.dataTransfer.setData("text/plain", i);
         e.dataTransfer.effectAllowed = "move";
@@ -366,8 +362,8 @@ export class Renderer {
       });
 
       item.addEventListener("click", () => {
-        if (item.classList.contains("placed")) return;
-        if (this.onShipDragStart) this.onShipDragStart(i);
+        if (this.onShipPickup) this.onShipPickup(i);
+        else if (this.onShipDragStart) this.onShipDragStart(i);
       });
 
       shipList.appendChild(item);
@@ -422,11 +418,10 @@ export class Renderer {
       const id = parseInt(item.dataset.shipId);
       if (placedShipIds.includes(id)) {
         item.classList.add("placed");
-        item.draggable = false;
       } else {
         item.classList.remove("placed");
-        item.draggable = true;
       }
+      item.draggable = true;
     });
 
     const readyBtn = panel.querySelector("#placement-ready-btn");

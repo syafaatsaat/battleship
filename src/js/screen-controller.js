@@ -212,9 +212,8 @@ export class ScreenController {
           this.placementShipId = null;
           this.renderer.clearPlacementPreview();
 
-          if (placedIds.length >= 5) {
-            this.onPlayerPlacementComplete(player);
-          }
+          // Don't auto-complete when all 5 are placed — let the player
+          // reposition ships and press READY when satisfied.
         }
       }
     };
@@ -242,6 +241,20 @@ export class ScreenController {
       }
     };
 
+    this.renderer.onShipPickup = (shipId) => {
+      // Picking up a ship (including an already-placed one) selects it
+      // for repositioning. The gameboard.placeShip call clears the old
+      // position automatically before placing the new one.
+      this.placementShipId = shipId;
+      const player = this.placementPlayer;
+      const ship = player.getGameBoard().getShips()[shipId];
+      const props = ship.getProperties();
+      if (props.startX >= 0) {
+        this.placementIsHorizontal = props.isHorizontal;
+        this.renderer.updateRotationIndicator(this.placementIsHorizontal);
+      }
+    };
+
     this.renderer.onShipDragEnd = () => {};
 
     this.renderer.onRandomize = (player) => {
@@ -252,7 +265,6 @@ export class ScreenController {
       this.renderer.updateShipTray(player, [0, 1, 2, 3, 4]);
       this.placementShipId = null;
       this.renderer.clearPlacementPreview();
-      this.onPlayerPlacementComplete(player);
     };
 
     this.renderer.onRotate = () => {
@@ -364,17 +376,10 @@ export class ScreenController {
   }
 
   renderPlayBoards() {
-    const currentPlayer = this.app.currentPlayer;
-    const opponent = this.app.getOpponent(currentPlayer);
-
-    // Own board: show ships. Opponent board: hide ships.
-    this.renderer.renderBoard(currentPlayer, false, true);
-    this.renderer.renderBoard(opponent, false, false);
-
-    if (this.app.gameMode === "PVP") {
-      this.renderer.hideOpponentBoard(currentPlayer);
-      this.renderer.showOpponentBoard(opponent);
-    }
+    // During play, hide all ship positions on both boards.
+    // Only hits and misses are visible.
+    this.renderer.renderBoard(this.app.bluePlayer, false, false);
+    this.renderer.renderBoard(this.app.redPlayer, false, false);
   }
 
   startPlayerTurn(player) {
@@ -493,9 +498,9 @@ export class ScreenController {
     this.renderer.showOpponentBoard(this.app.bluePlayer);
     this.renderer.showOpponentBoard(this.app.redPlayer);
 
-    const opponent = this.app.getOpponent(winner);
-    this.renderer.renderBoard(winner, false, true);
-    this.renderer.renderBoard(opponent, false, true);
+    // At game over, reveal all ship positions on both boards
+    this.renderer.renderBoard(this.app.bluePlayer, false, true);
+    this.renderer.renderBoard(this.app.redPlayer, false, true);
 
     setTimeout(() => {
       this.winnerText.textContent = `${winnerName} WINS!`;
