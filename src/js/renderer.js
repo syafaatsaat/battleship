@@ -87,7 +87,7 @@ export class Renderer {
     return panel;
   }
 
-  renderBoard(player, isPlacement = false, showShips = true) {
+  renderBoard(player, isPlacement = false, showShips = true, interactive = true) {
     const color = player.getColor().toLowerCase();
     const panel = this.playerPanels[color];
     if (!panel) return;
@@ -122,9 +122,11 @@ export class Renderer {
             cell.classList.add("miss");
           }
           cell.disabled = true;
+        } else if (!interactive) {
+          cell.disabled = true;
         }
 
-        if (!isPlacement && !tile.isShot) {
+        if (!isPlacement && interactive && !tile.isShot) {
           cell.disabled = false;
         }
 

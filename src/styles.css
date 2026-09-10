@@ -193,10 +193,12 @@ dialog {
   left: 0;
   right: 0;
   height: fit-content;
+  z-index: 10000;
 }
 
 dialog::backdrop {
-  background: rgba(0, 5, 15, 0.9);
+  background: rgba(0, 5, 15, 0.95);
+  z-index: 10000;
 }
 
 dialog[open] {
@@ -474,8 +476,12 @@ button:disabled {
 
 .player-panel.hidden-board .gameboard,
 .player-panel.hidden-board .ship-tray {
-  filter: blur(4px) brightness(0.5);
-  pointer-events: none;
+  visibility: hidden;
+}
+
+.player-panel.hidden-board .scoreboard,
+.player-panel.hidden-board .graveyard {
+  opacity: 0.3;
 }
 
 /* ============================================

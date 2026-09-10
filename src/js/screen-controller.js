@@ -127,8 +127,10 @@ export class ScreenController {
     this.renderer.buildPlayerPanel(this.app.player1, false);
     this.renderer.buildPlayerPanel(this.app.player2, true);
 
-    this.renderer.renderBoard(this.app.player1, true, true);
-    this.renderer.renderBoard(this.app.player2, true, true);
+    // Render both boards with ships hidden initially; the active player's
+    // board will be re-rendered with ships visible when their turn starts.
+    this.renderer.renderBoard(this.app.player1, true, false, false);
+    this.renderer.renderBoard(this.app.player2, true, false, false);
 
     this.renderer.renderGraveyard(this.app.player1);
     this.renderer.renderGraveyard(this.app.player2);
@@ -144,7 +146,7 @@ export class ScreenController {
 
     if (this.app.bluePlayer.isBot()) {
       this.app.bluePlayer.getGameBoard().randomizeShips();
-      this.renderer.renderBoard(this.app.bluePlayer, true, true);
+      this.renderer.renderBoard(this.app.bluePlayer, true, false, false);
       this.renderer.updateShipTray(this.app.bluePlayer, [0, 1, 2, 3, 4]);
       this.startRedPlacement();
     } else {
@@ -157,6 +159,10 @@ export class ScreenController {
     const name = this.placementPlayer.getName().toUpperCase();
     this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-blue");
     this.renderer.setActivePlayer(this.placementPlayer);
+
+    // Show only the active player's ships; hide the other player's completely
+    this.renderer.renderBoard(this.app.bluePlayer, true, true, true);
+    this.renderer.renderBoard(this.app.redPlayer, true, false, false);
 
     if (this.app.gameMode === "PVP") {
       this.renderer.hideOpponentBoard(this.app.redPlayer);
@@ -174,6 +180,10 @@ export class ScreenController {
     this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-red");
     this.renderer.setActivePlayer(this.placementPlayer);
 
+    // Show only the active player's ships; hide the other player's completely
+    this.renderer.renderBoard(this.app.bluePlayer, true, false, false);
+    this.renderer.renderBoard(this.app.redPlayer, true, true, true);
+
     if (this.app.gameMode === "PVP") {
       this.renderer.hideOpponentBoard(this.app.bluePlayer);
       this.renderer.showOpponentBoard(this.app.redPlayer);
@@ -181,7 +191,7 @@ export class ScreenController {
 
     if (this.placementPlayer.isBot()) {
       this.placementPlayer.getGameBoard().randomizeShips();
-      this.renderer.renderBoard(this.placementPlayer, true, true);
+      this.renderer.renderBoard(this.placementPlayer, true, false, false);
       this.renderer.updateShipTray(this.placementPlayer, [0, 1, 2, 3, 4]);
       this.beginPlayingPhase();
     } else {
@@ -323,7 +333,7 @@ export class ScreenController {
       this.bluePlaced = true;
       if (this.app.redPlayer.isBot()) {
         this.app.redPlayer.getGameBoard().randomizeShips();
-        this.renderer.renderBoard(this.app.redPlayer, true, true);
+        this.renderer.renderBoard(this.app.redPlayer, true, false, false);
         this.renderer.updateShipTray(this.app.redPlayer, [0, 1, 2, 3, 4]);
         this.beginPlayingPhase();
       } else {
@@ -376,10 +386,14 @@ export class ScreenController {
   }
 
   renderPlayBoards() {
+    const currentPlayer = this.app.currentPlayer;
+    const opponent = this.app.getOpponent(currentPlayer);
+
     // During play, hide all ship positions on both boards.
-    // Only hits and misses are visible.
-    this.renderer.renderBoard(this.app.bluePlayer, false, false);
-    this.renderer.renderBoard(this.app.redPlayer, false, false);
+    // Disable the current player's own board (can't attack yourself).
+    // Enable only the opponent's board so the player knows where to click.
+    this.renderer.renderBoard(currentPlayer, false, false, false);
+    this.renderer.renderBoard(opponent, false, false, true);
   }
 
   startPlayerTurn(player) {
@@ -498,9 +512,9 @@ export class ScreenController {
     this.renderer.showOpponentBoard(this.app.bluePlayer);
     this.renderer.showOpponentBoard(this.app.redPlayer);
 
-    // At game over, reveal all ship positions on both boards
-    this.renderer.renderBoard(this.app.bluePlayer, false, true);
-    this.renderer.renderBoard(this.app.redPlayer, false, true);
+    // At game over, reveal all ship positions on both boards (non-interactive)
+    this.renderer.renderBoard(this.app.bluePlayer, false, true, false);
+    this.renderer.renderBoard(this.app.redPlayer, false, true, false);
 
     setTimeout(() => {
       this.winnerText.textContent = `${winnerName} WINS!`;
