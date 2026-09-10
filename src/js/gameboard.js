@@ -22,8 +22,7 @@ export class GameBoard {
     for (let x = 0; x < this.boardSize; ++x) {
       this.#board.push([]);
       for (let y = 0; y < this.boardSize; ++y) {
-        const tile = new Tile();
-        this.#board[x].push(tile);
+        this.#board[x].push(new Tile());
       }
     }
   }
@@ -32,20 +31,25 @@ export class GameBoard {
     return this.#board;
   }
 
+  getShips() {
+    return this.#ships;
+  }
+
   printBoard() {
     let boardText = "";
-    const shipsLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    const shipsLetter = [
+      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+    ];
     for (let x = 0; x < this.boardSize; ++x) {
       let line = "";
       for (let y = 0; y < this.boardSize; ++y) {
         if (this.#board[x][y].ship === null) {
           line += "_";
-        }
-        else {
+        } else {
           line += shipsLetter[this.#board[x][y].ship.getID()];
         }
       }
-      line += '\n';
+      line += "\n";
       boardText += line;
     }
     console.log(boardText);
@@ -60,48 +64,53 @@ export class GameBoard {
       else if (i > 2) length = 4;
       else if (i > 0) length = 3;
 
-      const newShip = new Ship(i, length);
-      this.#ships.push(newShip);
+      this.#ships.push(new Ship(i, length));
     }
   }
 
-  placeShip(id, startX, startY, isHorizontal) {
-    const movingShipProp = this.#ships[id].getProperties();
-    let x = startX, y = startY;
-    let canPlace = true;
+  canPlaceShip(id, startX, startY, isHorizontal) {
+    const ship = this.#ships[id];
+    if (!ship) return false;
+    const length = ship.getLength();
+    let x = startX;
+    let y = startY;
 
-    for (let i = 0; i < movingShipProp.length; ++i) {
+    for (let i = 0; i < length; ++i) {
       if (
-        x >= this.boardSize || 
-        y >= this.boardSize || 
-        (this.#board[x][y].ship !== null &&
-        this.#board[x][y].ship !== this.#ships[id])
+        x < 0 ||
+        y < 0 ||
+        x >= this.boardSize ||
+        y >= this.boardSize
       ) {
-        canPlace = false;
-        break;
+        return false;
       }
-
-      if (movingShipProp.isHorizontal) ++x;
+      if (
+        this.#board[x][y].ship !== null &&
+        this.#board[x][y].ship !== ship
+      ) {
+        return false;
+      }
+      if (isHorizontal) ++x;
       else ++y;
     }
-    
-    if (canPlace) {
-      this.#ships[id].setProperties(startX, startY, isHorizontal);
-      this.#clearPreviousSpots(this.#ships[id]);
+    return true;
+  }
 
-      x = startX;
-      y = startY;
-      for (let i = 0; i < movingShipProp.length; ++i) {
-        this.#board[x][y].ship = this.#ships[id];
+  placeShip(id, startX, startY, isHorizontal) {
+    if (!this.canPlaceShip(id, startX, startY, isHorizontal)) return false;
 
-        if (movingShipProp.isHorizontal) ++x;
-        else ++y;
-      }
+    const ship = this.#ships[id];
+    ship.setProperties(startX, startY, isHorizontal);
+    this.#clearPreviousSpots(ship);
 
-      return true;
+    let x = startX;
+    let y = startY;
+    for (let i = 0; i < ship.getLength(); ++i) {
+      this.#board[x][y].ship = ship;
+      if (isHorizontal) ++x;
+      else ++y;
     }
-
-    return false;
+    return true;
   }
 
   #clearPreviousSpots(ship) {
@@ -115,31 +124,40 @@ export class GameBoard {
   }
 
   #placeShipRandom(ship) {
-    let isHorizontal = [true, false][Math.floor(Math.random()*2)];
-    let max_col = this.boardSize, max_row = this.boardSize;
-    
-    if (isHorizontal)
-      max_col -= (ship.getLength() - 1);
-    else 
-      max_row -= (ship.getLength() - 1);
+    const isHorizontal = Math.random() < 0.5;
+    let maxCol = this.boardSize;
+    let maxRow = this.boardSize;
 
-    if (max_row < 1 || max_col < 1)
-      return false;
+    if (isHorizontal) maxCol -= ship.getLength() - 1;
+    else maxRow -= ship.getLength() - 1;
 
-    const corner = [Math.floor(Math.random()*max_col), 
-                    Math.floor(Math.random()*max_row)];
+    if (maxRow < 1 || maxCol < 1) return false;
 
-    let x = corner[0], y = corner[1];
+    const corner = [
+      Math.floor(Math.random() * maxCol),
+      Math.floor(Math.random() * maxRow),
+    ];
+
+    let x = corner[0];
+    let y = corner[1];
     for (let i = 0; i < ship.getLength(); ++i) {
+      if (
+        x >= this.boardSize ||
+        y >= this.boardSize ||
+        this.#board[x][y].ship !== null
+      ) {
+        return false;
+      }
       if (isHorizontal) ++x;
       else ++y;
+    }
 
-      if (x >= this.boardSize || 
-          y >= this.boardSize || 
-          this.#board[x][y].ship !== null)
-        return false;
-
+    x = corner[0];
+    y = corner[1];
+    for (let i = 0; i < ship.getLength(); ++i) {
       this.#board[x][y].ship = ship;
+      if (isHorizontal) ++x;
+      else ++y;
     }
 
     ship.setProperties(corner[0], corner[1], isHorizontal);
@@ -151,44 +169,54 @@ export class GameBoard {
       this.#resetBoard();
       this.#resetShips();
       let successful = true;
-      
-      this.#ships.forEach((ship) => {
-        if (!this.#placeShipRandom(ship))
+
+      for (const ship of this.#ships) {
+        if (!this.#placeShipRandom(ship)) {
           successful = false;
-      });
+          break;
+        }
+      }
 
-      if (successful)
-        return true;
+      if (successful) return true;
     }
-
     return false;
   }
 
   receiveAttack(posX, posY) {
+    if (posX < 0 || posY < 0 || posX >= this.boardSize || posY >= this.boardSize)
+      return false;
+
     const tile = this.#board[posX][posY];
-    if (!tile.isShot) {
-      tile.isShot = true;
+    if (tile.isShot) return false;
 
-      if (tile.ship !== null) {
-        tile.ship.hit();
-        return true;
-      }
+    tile.isShot = true;
+    if (tile.ship !== null) {
+      tile.ship.hit();
+      return { hit: true, ship: tile.ship };
     }
-
-    return false;
-  }
-
-  printAllShips() {
-    for (let i = 0; i < this.#ships.length; ++i) {
-      console.log(i, "|", this.#ships[i].getProperties());
-    }
+    return { hit: false, ship: null };
   }
 
   allSank() {
-    this.#ships.forEach((ship) => {
+    for (const ship of this.#ships) {
       if (!ship.hasSunk()) return false;
-    });
-
+    }
     return true;
   }
-};
+
+  allShipsPlaced() {
+    for (const ship of this.#ships) {
+      const props = ship.getProperties();
+      if (props.startX < 0 || props.startY < 0) return false;
+    }
+    return true;
+  }
+
+  isShot(posX, posY) {
+    return this.#board[posX][posY].isShot;
+  }
+
+  getShipAt(posX, posY) {
+    return this.#board[posX][posY].ship;
+  }
+}

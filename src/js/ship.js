@@ -19,7 +19,7 @@ export class Ship {
     return this.#length;
   }
 
-  setProperties(startX, startY, isHorizontal=true) {
+  setProperties(startX, startY, isHorizontal = true) {
     this.#startX = startX;
     this.#startY = startY;
     this.#isHorizontal = isHorizontal;
@@ -32,16 +32,19 @@ export class Ship {
       startY: this.#startY,
       isHorizontal: this.#isHorizontal,
       length: this.#length,
-      hasSunk: this.hasSunk()
+      hasSunk: this.hasSunk(),
     };
   }
 
   hit() {
-    if (this.#hitCounter < this.#length)
-      ++this.#hitCounter;
+    if (this.#hitCounter < this.#length) ++this.#hitCounter;
+  }
+
+  getHits() {
+    return this.#hitCounter;
   }
 
   hasSunk() {
-    return this.#hitCounter === this.#length;
+    return this.#hitCounter >= this.#length;
   }
-};
+}
