@@ -86,7 +86,7 @@ export class Renderer {
     return panel;
   }
 
-  renderBoard(player, isPlacement = false, isOwnBoard = true) {
+  renderBoard(player, isPlacement = false, showShips = true) {
     const color = player.getColor().toLowerCase();
     const panel = this.playerPanels[color];
     if (!panel) return;
@@ -107,7 +107,7 @@ export class Renderer {
 
         const tile = grid[x][y];
 
-        if (isOwnBoard && tile.ship !== null) {
+        if (showShips && tile.ship !== null && !tile.isShot) {
           cell.classList.add(`ship-${color}`);
         }
 
@@ -123,30 +123,28 @@ export class Renderer {
           cell.disabled = true;
         }
 
-        if (!isPlacement) {
-          if (tile.isShot) {
-            cell.disabled = true;
-          }
+        if (!isPlacement && !tile.isShot) {
+          cell.disabled = false;
         }
 
         cell.addEventListener("click", () => {
-          if (this.onCellClick) this.onCellClick(player, x, y, isOwnBoard);
+          if (this.onCellClick) this.onCellClick(player, x, y, !isPlacement);
         });
 
         if (isPlacement) {
           cell.addEventListener("mouseenter", () => {
-            if (this.onCellHover) this.onCellHover(player, x, y, isOwnBoard);
+            if (this.onCellHover) this.onCellHover(player, x, y, true);
           });
           cell.addEventListener("mouseleave", () => {
             if (this.onCellLeave) this.onCellLeave();
           });
           cell.addEventListener("dragover", (e) => {
             e.preventDefault();
-            if (this.onCellHover) this.onCellHover(player, x, y, isOwnBoard);
+            if (this.onCellHover) this.onCellHover(player, x, y, true);
           });
           cell.addEventListener("drop", (e) => {
             e.preventDefault();
-            if (this.onCellClick) this.onCellClick(player, x, y, isOwnBoard, true);
+            if (this.onCellClick) this.onCellClick(player, x, y, true, true);
           });
         }
 
@@ -155,7 +153,7 @@ export class Renderer {
     }
   }
 
-  updateCell(x, y, player, isOwnBoard) {
+  updateCell(x, y, player) {
     const color = player.getColor().toLowerCase();
     const panel = this.playerPanels[color];
     if (!panel) return;
@@ -170,6 +168,7 @@ export class Renderer {
 
     cell.classList.remove("placement-hover", "placement-hover-invalid");
     cell.classList.remove("preview-valid", "preview-invalid");
+    cell.classList.remove(`ship-${color}`);
 
     if (tile.isShot) {
       if (tile.ship !== null) {
@@ -441,6 +440,28 @@ export class Renderer {
     if (text) {
       text.textContent = isHorizontal ? "HORIZONTAL" : "VERTICAL";
     }
+  }
+
+  enableBoard(player) {
+    const color = player.getColor().toLowerCase();
+    const panel = this.playerPanels[color];
+    if (!panel) return;
+    const cells = panel.querySelectorAll(".cell");
+    cells.forEach((c) => {
+      if (!c.classList.contains("hit") && !c.classList.contains("miss")) {
+        c.disabled = false;
+      }
+    });
+  }
+
+  disableBoard(player) {
+    const color = player.getColor().toLowerCase();
+    const panel = this.playerPanels[color];
+    if (!panel) return;
+    const cells = panel.querySelectorAll(".cell");
+    cells.forEach((c) => {
+      c.disabled = true;
+    });
   }
 
   clearAll() {

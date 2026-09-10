@@ -465,7 +465,8 @@ button:disabled {
   box-shadow: 0 0 20px rgba(255, 77, 109, 0.2);
 }
 
-.player-panel.hidden-board .gameboard {
+.player-panel.hidden-board .gameboard,
+.player-panel.hidden-board .ship-tray {
   filter: blur(4px) brightness(0.5);
   pointer-events: none;
 }

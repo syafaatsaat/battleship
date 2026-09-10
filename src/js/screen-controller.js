@@ -1,6 +1,5 @@
 import { Application } from "./application.js";
 import { Renderer } from "./renderer.js";
-import { GameBoard } from "./gameboard.js";
 
 const SHIP_LENGTHS = [2, 3, 3, 4, 5];
 const SHIP_NAMES = ["PATROL", "SUB", "CRUISER", "BATTLESHIP", "CARRIER"];
@@ -10,15 +9,12 @@ export class ScreenController {
     this.app = app;
     this.renderer = new Renderer(app);
 
-    // Placement state
     this.placementPlayer = null;
     this.placementShipId = null;
     this.placementIsHorizontal = true;
     this.placementHoverPos = null;
-    this.placementPhase = "blue"; // "blue" or "red" — who places next
     this.bluePlaced = false;
 
-    // Dialogs
     this.menuDialog = document.querySelector("#main-menu");
     this.pvpDialog = document.querySelector("#pvp-menu");
     this.pvbDialog = document.querySelector("#pvb-menu");
@@ -28,7 +24,6 @@ export class ScreenController {
     this.turnTransitionSubtitle = document.querySelector("#turn-transition-subtitle");
     this.winnerText = document.querySelector("#winner-text");
 
-    // Menu buttons
     this.pvpButton = document.querySelector("#pvp-btn");
     this.backPVPButton = document.querySelector("#back-pvp");
     this.startPVPButton = document.querySelector("#start-pvp");
@@ -106,6 +101,7 @@ export class ScreenController {
   setupGlobalKeyboard() {
     document.addEventListener("keydown", (e) => {
       if (e.key === "r" || e.key === "R") {
+        if (this.app.currentState !== "PLACEMENT") return;
         this.placementIsHorizontal = !this.placementIsHorizontal;
         this.renderer.updateRotationIndicator(this.placementIsHorizontal);
         if (this.placementHoverPos) {
@@ -116,41 +112,38 @@ export class ScreenController {
     });
   }
 
+  // ============================================
+  // GAME START & PLACEMENT
+  // ============================================
+
   startGame(isPVP, p1Name, p2Name, p1Color, difficulty) {
     this.app.reset(isPVP, p1Name, p2Name, p1Color, difficulty);
-    this.placementPhase = "blue";
     this.bluePlaced = false;
+    this.placementShipId = null;
+    this.placementHoverPos = null;
+    this.placementIsHorizontal = true;
     this.renderer.buildGameLayout();
 
-    // Build both player panels
     this.renderer.buildPlayerPanel(this.app.player1, false);
     this.renderer.buildPlayerPanel(this.app.player2, true);
 
-    // Render both boards as placement boards (own view)
     this.renderer.renderBoard(this.app.player1, true, true);
     this.renderer.renderBoard(this.app.player2, true, true);
 
-    // Render graveyards
     this.renderer.renderGraveyard(this.app.player1);
     this.renderer.renderGraveyard(this.app.player2);
 
-    // Show ship trays for both players (they'll be used during placement)
     this.renderer.renderShipTray(this.app.player1, []);
     this.renderer.renderShipTray(this.app.player2, []);
 
-    // Hide the red player's board initially (blue places first)
-    if (this.app.redPlayer === this.app.player2) {
-      this.renderer.hideOpponentBoard(this.app.player2);
-    } else {
-      this.renderer.hideOpponentBoard(this.app.player1);
+    if (this.app.gameMode === "PVP") {
+      this.renderer.hideOpponentBoard(this.app.redPlayer);
     }
 
     this.setupPlacementCallbacks();
 
-    // If in PVB and the bot is blue, bot auto-places and human (red) places next
     if (this.app.bluePlayer.isBot()) {
       this.app.bluePlayer.getGameBoard().randomizeShips();
-      this.bluePlaced = true;
       this.renderer.renderBoard(this.app.bluePlayer, true, true);
       this.renderer.updateShipTray(this.app.bluePlayer, [0, 1, 2, 3, 4]);
       this.startRedPlacement();
@@ -162,15 +155,14 @@ export class ScreenController {
   startBluePlacement() {
     this.placementPlayer = this.app.bluePlayer;
     const name = this.placementPlayer.getName().toUpperCase();
-    this.renderer.setStatus(`${name} — PLACE YOUR SHIPS`, "status-blue");
+    this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-blue");
     this.renderer.setActivePlayer(this.placementPlayer);
 
-    // In PVP, hide the other player's board and tray
     if (this.app.gameMode === "PVP") {
       this.renderer.hideOpponentBoard(this.app.redPlayer);
+      this.renderer.showOpponentBoard(this.app.bluePlayer);
     }
 
-    // Show transition dialog
     this.turnTransitionTitle.textContent = `${name}'S TURN`;
     this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
     this.turnTransition.show();
@@ -179,15 +171,15 @@ export class ScreenController {
   startRedPlacement() {
     this.placementPlayer = this.app.redPlayer;
     const name = this.placementPlayer.getName().toUpperCase();
-    this.renderer.setStatus(`${name} — PLACE YOUR SHIPS`, "status-red");
+    this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-red");
     this.renderer.setActivePlayer(this.placementPlayer);
 
-    // Show the red player's board, hide blue's
-    this.renderer.hideOpponentBoard(this.app.bluePlayer);
-    this.renderer.showOpponentBoard(this.app.redPlayer);
+    if (this.app.gameMode === "PVP") {
+      this.renderer.hideOpponentBoard(this.app.bluePlayer);
+      this.renderer.showOpponentBoard(this.app.redPlayer);
+    }
 
     if (this.placementPlayer.isBot()) {
-      // Bot auto-places
       this.placementPlayer.getGameBoard().randomizeShips();
       this.renderer.renderBoard(this.placementPlayer, true, true);
       this.renderer.updateShipTray(this.placementPlayer, [0, 1, 2, 3, 4]);
@@ -220,7 +212,6 @@ export class ScreenController {
           this.placementShipId = null;
           this.renderer.clearPlacementPreview();
 
-          // Check if this player's placement is done
           if (placedIds.length >= 5) {
             this.onPlayerPlacementComplete(player);
           }
@@ -251,9 +242,7 @@ export class ScreenController {
       }
     };
 
-    this.renderer.onShipDragEnd = () => {
-      // Keep shipId selected so click-to-place also works
-    };
+    this.renderer.onShipDragEnd = () => {};
 
     this.renderer.onRandomize = (player) => {
       if (player !== this.placementPlayer) return;
@@ -276,7 +265,12 @@ export class ScreenController {
     };
 
     this.renderer.onStartGame = () => {
-      // This is triggered from the READY button — handled in onPlayerPlacementComplete
+      if (this.app.currentState !== "PLACEMENT") return;
+      const player = this.placementPlayer;
+      const placedIds = this.getPlacedShipIds(player);
+      if (placedIds.length >= 5) {
+        this.onPlayerPlacementComplete(player);
+      }
     };
   }
 
@@ -315,57 +309,49 @@ export class ScreenController {
   onPlayerPlacementComplete(player) {
     if (player === this.app.bluePlayer) {
       this.bluePlaced = true;
-      // Blue is done, now red places
       if (this.app.redPlayer.isBot()) {
         this.app.redPlayer.getGameBoard().randomizeShips();
         this.renderer.renderBoard(this.app.redPlayer, true, true);
         this.renderer.updateShipTray(this.app.redPlayer, [0, 1, 2, 3, 4]);
         this.beginPlayingPhase();
       } else {
-        // Show transition dialog, then start red placement
         this.pendingTurnCallback = () => this.startRedPlacement();
         this.turnTransitionTitle.textContent = `${this.app.redPlayer.getName().toUpperCase()}'S TURN`;
         this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
         this.turnTransition.show();
       }
     } else {
-      // Red is done, start the game
       this.beginPlayingPhase();
     }
   }
 
+  // ============================================
+  // PLAYING PHASE
+  // ============================================
+
   beginPlayingPhase() {
     this.app.startPlaying();
 
-    // Show both boards in playing mode
     this.renderer.showOpponentBoard(this.app.bluePlayer);
     this.renderer.showOpponentBoard(this.app.redPlayer);
 
-    // Re-render both boards in play mode — own board shows ships, opponent board hidden
-    this.renderer.renderBoard(this.app.bluePlayer, false, true);
-    this.renderer.renderBoard(this.app.redPlayer, false, true);
-
-    // Remove ship trays
     for (const key in this.renderer.playerPanels) {
       const tray = this.renderer.playerPanels[key].querySelector(".ship-tray");
       if (tray) tray.remove();
     }
 
     this.setupPlayCallbacks();
+    this.renderPlayBoards();
 
-    // Show turn transition for the first player
     const firstPlayer = this.app.currentPlayer;
     const name = firstPlayer.getName().toUpperCase();
 
     if (firstPlayer.isBot()) {
-      this.renderer.setStatus(`${name} IS THINKING...`, "status-red");
+      this.renderer.setStatus(`${name} IS THINKING...`, `status-${firstPlayer.getColor().toLowerCase()}`);
       this.renderer.setActivePlayer(firstPlayer);
       setTimeout(() => this.runBotTurn(), 1000);
     } else {
-      this.renderer.setStatus(`${name}'S TURN — CLICK TO ATTACK`, `status-${firstPlayer.getColor().toLowerCase()}`);
       this.renderer.setActivePlayer(firstPlayer);
-
-      // In PVP, show transition dialog
       if (this.app.gameMode === "PVP") {
         this.pendingTurnCallback = () => this.startPlayerTurn(firstPlayer);
         this.turnTransitionTitle.textContent = `${name}'S TURN`;
@@ -377,9 +363,27 @@ export class ScreenController {
     }
   }
 
+  renderPlayBoards() {
+    const currentPlayer = this.app.currentPlayer;
+    const opponent = this.app.getOpponent(currentPlayer);
+
+    // Own board: show ships. Opponent board: hide ships.
+    this.renderer.renderBoard(currentPlayer, false, true);
+    this.renderer.renderBoard(opponent, false, false);
+
+    if (this.app.gameMode === "PVP") {
+      this.renderer.hideOpponentBoard(currentPlayer);
+      this.renderer.showOpponentBoard(opponent);
+    }
+  }
+
   startPlayerTurn(player) {
-    this.renderer.setStatus(`${player.getName().toUpperCase()}'S TURN — CLICK TO ATTACK`, `status-${player.getColor().toLowerCase()}`);
+    this.renderer.setStatus(
+      `${player.getName().toUpperCase()}'S TURN - CLICK TO ATTACK`,
+      `status-${player.getColor().toLowerCase()}`
+    );
     this.renderer.setActivePlayer(player);
+    this.renderPlayBoards();
 
     if (player.isBot()) {
       setTimeout(() => this.runBotTurn(), 1000);
@@ -389,19 +393,17 @@ export class ScreenController {
   setupPlayCallbacks() {
     this.renderer.onCellClick = (player, x, y, isOwnBoard) => {
       if (this.app.currentState !== "PLAYING") return;
-      if (isOwnBoard) return; // Can't attack your own board
 
       const attacker = this.app.currentPlayer;
-      if (attacker.isBot()) return; // Bot turns are automated
+      if (attacker.isBot()) return;
 
-      // Make sure the clicked board belongs to the opponent
       const opponent = this.app.getOpponent(attacker);
       if (player !== opponent) return;
 
       const result = this.app.attack(attacker, x, y);
       if (!result) return;
 
-      this.renderer.updateCell(x, y, opponent, false);
+      this.renderer.updateCell(x, y, opponent);
       this.renderer.renderGraveyard(opponent);
       this.renderer.updateScoreboard(opponent);
 
@@ -411,29 +413,13 @@ export class ScreenController {
       }
 
       if (result.hit) {
-        this.renderer.setStatus(`HIT! ${attacker.getName().toUpperCase()} ATTACKS AGAIN`, `status-${attacker.getColor().toLowerCase()}`);
-        if (result.sunk) {
-          this.renderer.setStatus(`SHIP SUNK! ${attacker.getName().toUpperCase()} ATTACKS AGAIN`, `status-${attacker.getColor().toLowerCase()}`);
-        }
+        const msg = result.sunk
+          ? `SHIP SUNK! ${attacker.getName().toUpperCase()} ATTACKS AGAIN`
+          : `HIT! ${attacker.getName().toUpperCase()} ATTACKS AGAIN`;
+        this.renderer.setStatus(msg, `status-${attacker.getColor().toLowerCase()}`);
       } else {
-        // Turn passes to opponent
         const nextPlayer = this.app.currentPlayer;
-        const nextName = nextPlayer.getName().toUpperCase();
-
-        if (nextPlayer.isBot()) {
-          this.renderer.setStatus(`${nextName} IS THINKING...`, `status-${nextPlayer.getColor().toLowerCase()}`);
-          this.renderer.setActivePlayer(nextPlayer);
-          setTimeout(() => this.runBotTurn(), 1000);
-        } else {
-          if (this.app.gameMode === "PVP") {
-            this.pendingTurnCallback = () => this.startPlayerTurn(nextPlayer);
-            this.turnTransitionTitle.textContent = `${nextName}'S TURN`;
-            this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
-            this.turnTransition.show();
-          } else {
-            this.startPlayerTurn(nextPlayer);
-          }
-        }
+        this.afterTurnEnd(nextPlayer);
       }
     };
 
@@ -443,6 +429,27 @@ export class ScreenController {
     this.renderer.onShipDragEnd = null;
     this.renderer.onRandomize = null;
     this.renderer.onRotate = null;
+    this.renderer.onStartGame = null;
+  }
+
+  afterTurnEnd(nextPlayer) {
+    const nextName = nextPlayer.getName().toUpperCase();
+
+    if (nextPlayer.isBot()) {
+      this.renderer.setStatus(`${nextName} IS THINKING...`, `status-${nextPlayer.getColor().toLowerCase()}`);
+      this.renderer.setActivePlayer(nextPlayer);
+      this.renderPlayBoards();
+      setTimeout(() => this.runBotTurn(), 1000);
+    } else {
+      if (this.app.gameMode === "PVP") {
+        this.pendingTurnCallback = () => this.startPlayerTurn(nextPlayer);
+        this.turnTransitionTitle.textContent = `${nextName}'S TURN`;
+        this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
+        this.turnTransition.show();
+      } else {
+        this.startPlayerTurn(nextPlayer);
+      }
+    }
   }
 
   runBotTurn() {
@@ -454,7 +461,7 @@ export class ScreenController {
     if (!result) return;
 
     const opponent = this.app.getOpponent(bot);
-    this.renderer.updateCell(result.x, result.y, opponent, false);
+    this.renderer.updateCell(result.x, result.y, opponent);
     this.renderer.renderGraveyard(opponent);
     this.renderer.updateScoreboard(opponent);
 
@@ -464,28 +471,14 @@ export class ScreenController {
     }
 
     if (result.hit) {
-      // Bot goes again
-      this.renderer.setStatus(`HIT! ${bot.getName().toUpperCase()} ATTACKS AGAIN`, `status-${bot.getColor().toLowerCase()}`);
+      const msg = result.sunk
+        ? `SHIP SUNK! ${bot.getName().toUpperCase()} ATTACKS AGAIN`
+        : `HIT! ${bot.getName().toUpperCase()} ATTACKS AGAIN`;
+      this.renderer.setStatus(msg, `status-${bot.getColor().toLowerCase()}`);
       setTimeout(() => this.runBotTurn(), 800);
     } else {
-      // Turn passes to human
       const nextPlayer = this.app.currentPlayer;
-      const nextName = nextPlayer.getName().toUpperCase();
-
-      if (nextPlayer.isBot()) {
-        this.renderer.setStatus(`${nextName} IS THINKING...`, `status-${nextPlayer.getColor().toLowerCase()}`);
-        this.renderer.setActivePlayer(nextPlayer);
-        setTimeout(() => this.runBotTurn(), 800);
-      } else {
-        if (this.app.gameMode === "PVP") {
-          this.pendingTurnCallback = () => this.startPlayerTurn(nextPlayer);
-          this.turnTransitionTitle.textContent = `${nextName}'S TURN`;
-          this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
-          this.turnTransition.show();
-        } else {
-          this.startPlayerTurn(nextPlayer);
-        }
-      }
+      this.afterTurnEnd(nextPlayer);
     }
   }
 
@@ -497,11 +490,12 @@ export class ScreenController {
     this.renderer.setStatus(`${winnerName} WINS!`, `status-${color}`);
     this.renderer.setActivePlayer(winner);
 
-    // Show both boards fully
     this.renderer.showOpponentBoard(this.app.bluePlayer);
     this.renderer.showOpponentBoard(this.app.redPlayer);
-    this.renderer.renderBoard(this.app.bluePlayer, false, true);
-    this.renderer.renderBoard(this.app.redPlayer, false, true);
+
+    const opponent = this.app.getOpponent(winner);
+    this.renderer.renderBoard(winner, false, true);
+    this.renderer.renderBoard(opponent, false, true);
 
     setTimeout(() => {
       this.winnerText.textContent = `${winnerName} WINS!`;
