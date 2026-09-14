@@ -381,6 +381,10 @@ export class Renderer {
       for (let j = 0; j < SHIP_LENGTHS[i]; j++) {
         const c = document.createElement("div");
         c.className = `ship-cell-visual ${color}`;
+        if (j === 0) {
+          c.classList.add("ship-cell-head");
+          c.textContent = String(i + 1);
+        }
         visual.appendChild(c);
       }
       item.appendChild(visual);
