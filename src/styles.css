@@ -157,7 +157,7 @@
   --green-glow: #45a049;
   --yellow: #ffcc00;
   --orange: #ff9800;
-  --font-mono: "Courier New", "Lucida Console", monospace;
+  --font-mono: "Press Start 2P", "Lucida Console", monospace;
 }
 
 * {
@@ -282,6 +282,7 @@ input[type="text"] {
   padding: 12px 16px;
   font-family: var(--font-mono);
   font-size: 16px;
+  text-transform: uppercase;
   letter-spacing: 1px;
   border-radius: 2px;
   outline: none;
