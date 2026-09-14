@@ -20,6 +20,12 @@ export class Renderer {
     this.onRandomize = null;
     this.onStartGame = null;
     this.onRotate = null;
+
+    // Transparent 1x1 canvas used to hide the default drag ghost image
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    this.dragGhost = canvas;
   }
 
   buildGameLayout() {
@@ -110,6 +116,11 @@ export class Renderer {
 
         if (showShips && tile.ship !== null && !tile.isShot) {
           cell.classList.add(`ship-${color}`);
+          const props = tile.ship.getProperties();
+          if (x === props.startX && y === props.startY) {
+            cell.classList.add("ship-head");
+            cell.textContent = String(tile.ship.getID() + 1);
+          }
         }
 
         if (tile.isShot) {
@@ -157,6 +168,7 @@ export class Renderer {
               const shipId = tile.ship.getID();
               e.dataTransfer.setData("text/plain", String(shipId));
               e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setDragImage(this.dragGhost, 0, 0);
               cell.classList.add("dragging");
               if (this.onShipPickup) this.onShipPickup(shipId);
             });
@@ -371,6 +383,7 @@ export class Renderer {
         item.classList.add("dragging");
         e.dataTransfer.setData("text/plain", i);
         e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setDragImage(this.dragGhost, 0, 0);
         if (this.onShipDragStart) this.onShipDragStart(i);
       });
 
