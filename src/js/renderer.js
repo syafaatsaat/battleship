@@ -160,6 +160,12 @@ export class Renderer {
             e.preventDefault();
             if (this.onCellClick) this.onCellClick(player, x, y, true, true);
           });
+          cell.addEventListener("wheel", (e) => {
+            if (this.onRotate) {
+              e.preventDefault();
+              this.onRotate();
+            }
+          }, { passive: false });
 
           if (showShips && tile.ship !== null && !tile.isShot) {
             cell.draggable = true;
@@ -404,7 +410,7 @@ export class Renderer {
 
     const rotationDiv = document.createElement("div");
     rotationDiv.id = "rotation-indicator";
-    rotationDiv.innerHTML = `ORIENTATION: <span class="rotation-mode" id="rotation-mode-text">HORIZONTAL</span> (R to rotate)`;
+    rotationDiv.innerHTML = `ORIENTATION: <span class="rotation-mode" id="rotation-mode-text">HORIZONTAL</span> (R or scroll to rotate)`;
     tray.appendChild(rotationDiv);
 
     const controls = document.createElement("div");

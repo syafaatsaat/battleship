@@ -225,6 +225,16 @@ export class ScreenController {
           // Don't auto-complete when all 5 are placed — let the player
           // reposition ships and press READY when satisfied.
         }
+      } else {
+        // No ship selected — if the clicked cell has a ship, pick it up
+        // so the player can reposition it.
+        const ship = player.getGameBoard().getShipAt(x, y);
+        if (ship) {
+          this.renderer.onShipPickup(ship.getID());
+          this.placementHoverPos = { x, y };
+          this.renderer.clearPlacementPreview();
+          this.updatePlacementPreview();
+        }
       }
     };
 
