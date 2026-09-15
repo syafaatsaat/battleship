@@ -290,13 +290,20 @@ export class Renderer {
     this.statusBar.appendChild(span);
   }
 
-  setActivePlayer(player) {
+  setActivePlayer(player, state) {
     for (const key in this.playerPanels) {
       this.playerPanels[key].classList.remove("active-blue", "active-red");
     }
     if (player) {
       const color = player.getColor().toLowerCase();
-      this.playerPanels[color]?.classList.add(`active-${color}`);
+      let activePlayerColor = color;
+
+      if (state === "PLAYING") {
+        if (color === "blue") activePlayerColor = "red";
+        else activePlayerColor = "blue";
+      }
+
+      this.playerPanels[activePlayerColor]?.classList.add(`active-${color}`);
     }
   }
 

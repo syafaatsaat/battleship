@@ -156,7 +156,9 @@ export class ScreenController {
     this.placementPlayer = this.app.bluePlayer;
     const name = this.placementPlayer.getName().toUpperCase();
     this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-blue");
-    this.renderer.setActivePlayer(this.placementPlayer);
+    this.renderer.setActivePlayer(
+      this.placementPlayer, this.app.getCurrentState()
+    );
 
     // Show only the active player's ships; hide the other player's completely
     this.renderer.renderBoard(this.app.bluePlayer, true, true, true);
@@ -174,7 +176,9 @@ export class ScreenController {
     this.placementPlayer = this.app.redPlayer;
     const name = this.placementPlayer.getName().toUpperCase();
     this.renderer.setStatus(`${name} - PLACE YOUR SHIPS`, "status-red");
-    this.renderer.setActivePlayer(this.placementPlayer);
+    this.renderer.setActivePlayer(
+      this.placementPlayer, this.app.getCurrentState()
+    );
 
     // Show only the active player's ships; hide the other player's completely
     this.renderer.renderBoard(this.app.bluePlayer, true, false, false);
@@ -374,10 +378,10 @@ export class ScreenController {
 
     if (firstPlayer.isBot()) {
       this.renderer.setStatus(`${name} IS THINKING...`, `status-${firstPlayer.getColor().toLowerCase()}`);
-      this.renderer.setActivePlayer(firstPlayer);
+      this.renderer.setActivePlayer(firstPlayer, this.app.getCurrentState());
       setTimeout(() => this.runBotTurn(), 1000);
     } else {
-      this.renderer.setActivePlayer(firstPlayer);
+      this.renderer.setActivePlayer(firstPlayer, this.app.getCurrentState());
       if (this.app.gameMode === "PVP") {
         this.pendingTurnCallback = () => this.startPlayerTurn(firstPlayer);
         this.turnTransitionTitle.textContent = `${name}'S TURN`;
@@ -405,7 +409,7 @@ export class ScreenController {
       `${player.getName().toUpperCase()}'S TURN - CLICK TO ATTACK`,
       `status-${player.getColor().toLowerCase()}`
     );
-    this.renderer.setActivePlayer(player);
+    this.renderer.setActivePlayer(player, this.app.getCurrentState());
     this.renderPlayBoards();
 
     if (player.isBot()) {
@@ -460,7 +464,7 @@ export class ScreenController {
 
     if (nextPlayer.isBot()) {
       this.renderer.setStatus(`${nextName} IS THINKING...`, `status-${nextPlayer.getColor().toLowerCase()}`);
-      this.renderer.setActivePlayer(nextPlayer);
+      this.renderer.setActivePlayer(nextPlayer, this.app.getCurrentState());
       this.renderPlayBoards();
       setTimeout(() => this.runBotTurn(), 1000);
     } else {
@@ -511,7 +515,7 @@ export class ScreenController {
     const color = winner.getColor().toLowerCase();
 
     this.renderer.setStatus(`${winnerName} WINS!`, `status-${color}`);
-    this.renderer.setActivePlayer(winner);
+    this.renderer.setActivePlayer(winner, this.app.getCurrentState());
 
     this.renderer.showOpponentBoard(this.app.bluePlayer);
     this.renderer.showOpponentBoard(this.app.redPlayer);
