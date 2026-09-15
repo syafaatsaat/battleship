@@ -572,6 +572,7 @@ button:disabled {
   justify-content: center;
   font-size: 14px;
   font-weight: bold;
+  line-height: 1;
   padding: 0;
   cursor: pointer;
   transition: background 0.15s;
@@ -620,6 +621,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
   color: var(--text-primary);
   z-index: 1;
 }
@@ -649,6 +651,12 @@ button:disabled {
 .cell.miss::after {
   content: "x";
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 100%;
+  height: 100%;
 }
 
 .cell.sunk {

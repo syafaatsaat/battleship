@@ -138,9 +138,7 @@ export class ScreenController {
     this.renderer.renderShipTray(this.app.player1, []);
     this.renderer.renderShipTray(this.app.player2, []);
 
-    if (this.app.gameMode === "PVP") {
-      this.renderer.hideOpponentBoard(this.app.redPlayer);
-    }
+    this.renderer.hideOpponentBoard(this.app.redPlayer);
 
     this.setupPlacementCallbacks();
 
@@ -164,10 +162,8 @@ export class ScreenController {
     this.renderer.renderBoard(this.app.bluePlayer, true, true, true);
     this.renderer.renderBoard(this.app.redPlayer, true, false, false);
 
-    if (this.app.gameMode === "PVP") {
-      this.renderer.hideOpponentBoard(this.app.redPlayer);
-      this.renderer.showOpponentBoard(this.app.bluePlayer);
-    }
+    this.renderer.hideOpponentBoard(this.app.redPlayer);
+    this.renderer.showOpponentBoard(this.app.bluePlayer);
 
     this.turnTransitionTitle.textContent = `${name}'S TURN`;
     this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
@@ -184,10 +180,8 @@ export class ScreenController {
     this.renderer.renderBoard(this.app.bluePlayer, true, false, false);
     this.renderer.renderBoard(this.app.redPlayer, true, true, true);
 
-    if (this.app.gameMode === "PVP") {
-      this.renderer.hideOpponentBoard(this.app.bluePlayer);
-      this.renderer.showOpponentBoard(this.app.redPlayer);
-    }
+    this.renderer.hideOpponentBoard(this.app.bluePlayer);
+    this.renderer.showOpponentBoard(this.app.redPlayer);
 
     if (this.placementPlayer.isBot()) {
       this.placementPlayer.getGameBoard().randomizeShips();
