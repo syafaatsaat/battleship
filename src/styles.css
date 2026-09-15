@@ -157,6 +157,7 @@
   --green-glow: #45a049;
   --yellow: #ffcc00;
   --orange: #ff9800;
+  --white: #fff;
   --font-mono: "Press Start 2P", "Lucida Console", monospace;
 }
 
@@ -221,8 +222,8 @@ dialog[open] {
   letter-spacing: 4px;
   text-align: center;
   margin-bottom: 32px;
-  color: var(--blue);
-  text-shadow: 0 0 10px var(--blue-glow);
+  color: var(--white);
+  text-shadow: 0 0 10px var(--white);
 }
 
 #menu-buttons {
@@ -407,6 +408,7 @@ button:disabled {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
   width: 100%;
   max-width: 1200px;
   gap: 16px;
@@ -416,8 +418,8 @@ button:disabled {
 #game-header .header-title {
   font-size: 20px;
   letter-spacing: 4px;
-  color: var(--blue);
-  text-shadow: 0 0 8px var(--blue-glow);
+  color: var(--white);
+  text-shadow: 0 0 8px var(--white);
 }
 
 #status-bar {
@@ -524,8 +526,8 @@ button:disabled {
 }
 
 .scoreboard .badge {
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 14px;
+  padding: 8px 8px 6px 8px;
   border-radius: 2px;
   letter-spacing: 1px;
 }
@@ -675,7 +677,7 @@ button:disabled {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
   padding: 16px;
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
@@ -699,6 +701,7 @@ button:disabled {
 .ship-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
   background: var(--bg-cell);
@@ -741,8 +744,8 @@ button:disabled {
 }
 
 .ship-cell-visual {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 1px;
   display: flex;
   align-items: center;
@@ -753,7 +756,7 @@ button:disabled {
 }
 
 .ship-cell-visual.ship-cell-head {
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .ship-cell-visual.blue {
@@ -789,6 +792,10 @@ button:disabled {
 #rotation-indicator .rotation-mode {
   color: var(--blue);
   font-weight: bold;
+}
+
+.player-panel.red #rotation-indicator .rotation-mode {
+  color: var(--red);
 }
 
 /* ============================================
