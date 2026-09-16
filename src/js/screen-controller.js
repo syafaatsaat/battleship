@@ -18,6 +18,7 @@ export class ScreenController {
     this.menuDialog = document.querySelector("#main-menu");
     this.pvpDialog = document.querySelector("#pvp-menu");
     this.pvbDialog = document.querySelector("#pvb-menu");
+    this.coverDiv = document.querySelector("#cover");
     this.turnTransition = document.querySelector("#turn-transition");
     this.gameOverDialog = document.querySelector("#game-over-dialog");
     this.turnTransitionTitle = document.querySelector("#turn-transition-title");
@@ -78,6 +79,7 @@ export class ScreenController {
 
     this.confirmTurnBtn.addEventListener("click", () => {
       this.turnTransition.close();
+      this.coverDiv.hidden = true;
       if (this.pendingTurnCallback) {
         const cb = this.pendingTurnCallback;
         this.pendingTurnCallback = null;
@@ -87,12 +89,14 @@ export class ScreenController {
 
     this.playAgainBtn.addEventListener("click", () => {
       this.gameOverDialog.close();
+      this.coverDiv.hidden = true;
       this.renderer.clearAll();
       this.menuDialog.show();
     });
 
     this.mainMenuBtn.addEventListener("click", () => {
       this.gameOverDialog.close();
+      this.coverDiv.hidden = true;
       this.renderer.clearAll();
       this.menuDialog.show();
     });
@@ -169,6 +173,7 @@ export class ScreenController {
 
     this.turnTransitionTitle.textContent = `${name}'S TURN`;
     this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
+    this.coverDiv.hidden = false;
     this.turnTransition.show();
   }
 
@@ -195,6 +200,7 @@ export class ScreenController {
     } else {
       this.turnTransitionTitle.textContent = `${name}'S TURN`;
       this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
+      this.coverDiv.hidden = false;
       this.turnTransition.show();
     }
   }
@@ -348,6 +354,7 @@ export class ScreenController {
         this.pendingTurnCallback = () => this.startRedPlacement();
         this.turnTransitionTitle.textContent = `${this.app.redPlayer.getName().toUpperCase()}'S TURN`;
         this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
+        this.coverDiv.hidden = false;
         this.turnTransition.show();
       }
     } else {
@@ -386,6 +393,7 @@ export class ScreenController {
         this.pendingTurnCallback = () => this.startPlayerTurn(firstPlayer);
         this.turnTransitionTitle.textContent = `${name}'S TURN`;
         this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
+        this.coverDiv.hidden = false;
         this.turnTransition.show();
       } else {
         this.startPlayerTurn(firstPlayer);
@@ -472,6 +480,7 @@ export class ScreenController {
         this.pendingTurnCallback = () => this.startPlayerTurn(nextPlayer);
         this.turnTransitionTitle.textContent = `${nextName}'S TURN`;
         this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
+        this.coverDiv.hidden = false;
         this.turnTransition.show();
       } else {
         this.startPlayerTurn(nextPlayer);
@@ -528,6 +537,7 @@ export class ScreenController {
       this.winnerText.textContent = `${winnerName} WINS!`;
       this.winnerText.className = `title crt-text ${color}`;
       this.gameOverDialog.show();
+      this.coverDiv.hidden = false;
     }, 1500);
   }
 }
