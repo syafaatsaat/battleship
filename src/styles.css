@@ -153,6 +153,10 @@
   --red: #ff4d6d;
   --red-glow: #e63946;
   --red-dark: #b71c1c;
+  --valid-bg: rgba(98, 255, 77, 0.35);
+  --valid-border: rgb(30, 199, 8);
+  --invalid-bg: rgba(167, 13, 42, 0.562);
+  --invalid-border: rgb(240, 6, 49);
   --green: #4caf50;
   --green-glow: #45a049;
   --yellow: #ffcc00;
@@ -224,6 +228,17 @@ dialog[open] {
   margin-bottom: 32px;
   color: var(--white);
   text-shadow: 0 0 10px var(--white);
+}
+
+#main-menu,
+#pvp-menu,
+#pvb-menu,
+#turn-transition,
+#game-over-dialog {
+  text-align: center;
+  font-family: "Press Start 2P", system-ui;
+  animation: boxShadow 1.6s infinite;
+  z-index: 1000;
 }
 
 #menu-buttons {
@@ -584,11 +599,12 @@ button:disabled {
 }
 
 .cell.placement-hover {
-  background: rgba(77, 166, 255, 0.25);
+  /* background: rgba(77, 166, 255, 0.25); */
+  background: var(--valid-bg);
 }
 
 .cell.placement-hover-invalid {
-  background: rgba(255, 77, 109, 0.25);
+  background: var(--invalid-bg);
 }
 
 /* Ship cells on your own board */
@@ -667,13 +683,13 @@ button:disabled {
 
 /* Ship preview during placement */
 .cell.preview-valid {
-  background: rgba(77, 166, 255, 0.35);
-  border: 1px solid var(--blue);
+  background: var(--valid-bg) !important;
+  border: 1px solid var(--valid-border) !important;
 }
 
 .cell.preview-invalid {
-  background: rgba(255, 77, 109, 0.35);
-  border: 1px solid var(--red);
+  background: var(--invalid-bg) !important;
+  border: 1px solid var(--invalid-border) !important;
 }
 
 /* ============================================
@@ -959,4 +975,47 @@ button:disabled {
     height: 20px;
     font-size: 9px;
   }
+}
+
+.crt::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(18, 16, 16, 0.1);
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+    animation: flicker 0.15s infinite;
+}
+
+.crt::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: 
+        linear-gradient(
+            rgba(18, 16, 16, 0) 50%, 
+            rgba(0, 0, 0, 0.25) 50%
+        ), 
+        linear-gradient(
+            90deg, 
+            rgba(255, 0, 0, 0.06), 
+            rgba(0, 255, 0, 0.02), 
+            rgba(0, 0, 255, 0.06)
+        );
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
+.crt {
+    animation: textShadow 1.6s infinite, boxShadow 1.6s infinite;
 }
