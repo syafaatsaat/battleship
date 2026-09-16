@@ -421,7 +421,7 @@ export class Renderer {
 
     const rotationDiv = document.createElement("div");
     rotationDiv.id = "rotation-indicator";
-    rotationDiv.innerHTML = `ORIENTATION: <span class="rotation-mode" id="rotation-mode-text">HORIZONTAL</span><br>(R or scroll to rotate)`;
+    rotationDiv.innerHTML = `(R or scroll to rotate)`;
     tray.appendChild(rotationDiv);
 
     const controls = document.createElement("div");

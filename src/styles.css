@@ -582,13 +582,9 @@ button:disabled {
   background: var(--bg-cell);
   border: none;
   border-radius: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  line-height: 1;
-  padding: 0;
+  font-size: 32px;
+  text-align: center;
+  padding: 2px;
   cursor: pointer;
   transition: background 0.15s;
   position: relative;
@@ -632,12 +628,7 @@ button:disabled {
 }
 
 .cell.ship-head {
-  font-size: 18px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  font-size: 28px;
   color: var(--text-primary);
   z-index: 1;
 }
@@ -665,12 +656,7 @@ button:disabled {
 }
 
 .cell.miss::after {
-  content: "x";
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  content: "X";
   width: 100%;
   height: 100%;
 }
