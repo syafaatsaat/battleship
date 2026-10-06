@@ -1,5 +1,12 @@
-import path from "node:path";
+//import path from "node:path";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Recreate __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default {
   entry: {
@@ -9,11 +16,12 @@ export default {
     new HtmlWebpackPlugin({
       title: "Production",
       template: "./src/template.html",
+      filename: "index.html",
     }),
   ],
   output: {
-    filename: "main.js",
-    path: path.resolve(import.meta.dirname, "dist"),
+    filename: 'main.js', // or whatever your bundle name is
+    path: path.resolve(__dirname, 'dist'),
     clean: true,
   },
   module: {
