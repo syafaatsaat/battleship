@@ -37,9 +37,7 @@ export class GameBoard {
 
   printBoard() {
     let boardText = "";
-    const shipsLetter = [
-      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-    ];
+    const shipsLetter = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
     for (let y = 0; y < this.boardSize; ++y) {
       let line = "";
       for (let x = 0; x < this.boardSize; ++x) {
@@ -76,18 +74,10 @@ export class GameBoard {
     let y = startY;
 
     for (let i = 0; i < length; ++i) {
-      if (
-        x < 0 ||
-        y < 0 ||
-        x >= this.boardSize ||
-        y >= this.boardSize
-      ) {
+      if (x < 0 || y < 0 || x >= this.boardSize || y >= this.boardSize) {
         return false;
       }
-      if (
-        this.#board[x][y].ship !== null &&
-        this.#board[x][y].ship !== ship
-      ) {
+      if (this.#board[x][y].ship !== null && this.#board[x][y].ship !== ship) {
         return false;
       }
       if (isHorizontal) ++x;
@@ -183,7 +173,12 @@ export class GameBoard {
   }
 
   receiveAttack(posX, posY) {
-    if (posX < 0 || posY < 0 || posX >= this.boardSize || posY >= this.boardSize)
+    if (
+      posX < 0 ||
+      posY < 0 ||
+      posX >= this.boardSize ||
+      posY >= this.boardSize
+    )
       return false;
 
     const tile = this.#board[posX][posY];

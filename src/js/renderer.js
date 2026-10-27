@@ -100,7 +100,12 @@ export class Renderer {
     return panel;
   }
 
-  renderBoard(player, isPlacement = false, showShips = true, interactive = true) {
+  renderBoard(
+    player,
+    isPlacement = false,
+    showShips = true,
+    interactive = true,
+  ) {
     const color = player.getColor().toLowerCase();
     const panel = this.playerPanels[color];
     if (!panel) return;
@@ -172,9 +177,13 @@ export class Renderer {
           });
           // Only hijack the scroll wheel while a ship is being placed, so
           // the page can still scroll over the board otherwise.
-          cell.addEventListener("wheel", (e) => {
-            if (this.onRotate && this.onRotate(true)) e.preventDefault();
-          }, { passive: false });
+          cell.addEventListener(
+            "wheel",
+            (e) => {
+              if (this.onRotate && this.onRotate(true)) e.preventDefault();
+            },
+            { passive: false },
+          );
 
           if (showShips && tile.ship !== null && !tile.isShot) {
             cell.draggable = true;
@@ -354,7 +363,9 @@ export class Renderer {
   }
 
   clearPlacementPreview() {
-    const cells = document.querySelectorAll(".cell.preview-valid, .cell.preview-invalid");
+    const cells = document.querySelectorAll(
+      ".cell.preview-valid, .cell.preview-invalid",
+    );
     cells.forEach((c) => {
       c.classList.remove("preview-valid", "preview-invalid");
     });

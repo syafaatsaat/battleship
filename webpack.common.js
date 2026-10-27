@@ -1,8 +1,8 @@
 //import path from "node:path";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { fileURLToPath } from "url";
+import path from "path";
 
 // Recreate __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -20,8 +20,8 @@ export default {
     }),
   ],
   output: {
-    filename: 'main.js', // or whatever your bundle name is
-    path: path.resolve(__dirname, 'dist'),
+    filename: "main.js", // or whatever your bundle name is
+    path: path.resolve(__dirname, "dist"),
     clean: true,
   },
   module: {

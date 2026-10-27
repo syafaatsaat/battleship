@@ -6,7 +6,13 @@ export class Application {
   }
 
   // color: "BLUE" or "RED" — blue always goes first
-  reset(isPVP, player1Name, player2Name, player1Color = "BLUE", difficulty = "EASY") {
+  reset(
+    isPVP,
+    player1Name,
+    player2Name,
+    player1Color = "BLUE",
+    difficulty = "EASY",
+  ) {
     this.gameMode = isPVP ? "PVP" : "PVB";
     this.difficulty = difficulty.toUpperCase();
 
@@ -123,7 +129,14 @@ export class Application {
       this.currentPlayer = opponent;
     }
 
-    return { x: move.x, y: move.y, hit: move.result.hit, ship: move.result.ship, sunk, won };
+    return {
+      x: move.x,
+      y: move.y,
+      hit: move.result.hit,
+      ship: move.result.ship,
+      sunk,
+      won,
+    };
   }
 
   // Placement phase: both players must place ships before playing
