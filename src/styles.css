@@ -254,16 +254,14 @@ dialog[open] {
   letter-spacing: 2px;
 }
 
-#cover {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 2;
+/* Turn hand-offs: fully hide the boards from the next player */
+#turn-transition::backdrop {
+  background: var(--bg-dark);
 }
 
-/* Turn hand-offs: fully hide the boards from the next player */
-#cover.opaque {
-  background-color: var(--bg-dark);
+/* Game over: keep the revealed boards visible behind the dialog */
+#game-over-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* ============================================
@@ -417,6 +415,7 @@ button:disabled {
 
 .nav-buttons {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 16px;
   margin-top: 24px;
@@ -424,6 +423,7 @@ button:disabled {
 
 .nav-buttons button {
   flex: 1;
+  white-space: nowrap;
 }
 
 /* ============================================
@@ -441,6 +441,7 @@ button:disabled {
 }
 
 #game-header {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -449,6 +450,14 @@ button:disabled {
   max-width: 1200px;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+#header-menu-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 12px;
+  padding: 8px 12px;
 }
 
 #game-header .header-title {
@@ -483,6 +492,8 @@ button:disabled {
 }
 
 #game-container {
+  width: 100%;
+  max-width: 1200px;
   display: flex;
   gap: 40px;
   flex-wrap: wrap;
@@ -490,7 +501,12 @@ button:disabled {
   align-items: flex-start;
 }
 
+/* Panels shrink (the graveyard wraps) so both boards fit side by side
+   down to the 900px breakpoint */
 .player-panel {
+  flex: 1 1 400px;
+  min-width: 0;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -540,6 +556,10 @@ button:disabled {
 }
 
 .scoreboard .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 16px;
   letter-spacing: 2px;
   font-weight: bold;
@@ -556,12 +576,14 @@ button:disabled {
 }
 
 .scoreboard .score {
+  flex-shrink: 0;
   font-size: 14px;
   color: var(--text-dim);
   letter-spacing: 1px;
 }
 
 .scoreboard .badge {
+  flex-shrink: 0;
   font-size: 14px;
   padding: 8px 8px 6px 10px;
   border-radius: 2px;
@@ -944,6 +966,11 @@ button:disabled {
     gap: 20px;
   }
 
+  .player-panel {
+    flex: none;
+    width: 100%;
+  }
+
   .cell {
     width: 28px;
     height: 28px;
@@ -970,6 +997,10 @@ button:disabled {
   #game-header {
     flex-direction: column;
     gap: 8px;
+  }
+
+  #header-menu-btn {
+    position: static;
   }
 
   .ship-tray {

@@ -1,8 +1,4 @@
-import { Application } from "./application.js";
 import { Renderer } from "./renderer.js";
-
-const SHIP_LENGTHS = [2, 3, 3, 4, 5];
-const SHIP_NAMES = ["PATROL", "SUB", "CRUISER", "BATTLESHIP", "CARRIER"];
 
 export class ScreenController {
   constructor(app) {
@@ -17,11 +13,13 @@ export class ScreenController {
     this.placementGrabOffset = 0;
     this.bluePlaced = false;
     this.lastGameSettings = null;
+    // Bumped whenever a game starts or is left, so timers queued for an
+    // earlier game (bot moves, the game-over dialog) do nothing
+    this.gameToken = 0;
 
     this.menuDialog = document.querySelector("#main-menu");
     this.pvpDialog = document.querySelector("#pvp-menu");
     this.pvbDialog = document.querySelector("#pvb-menu");
-    this.coverDiv = document.querySelector("#cover");
     this.turnTransition = document.querySelector("#turn-transition");
     this.gameOverDialog = document.querySelector("#game-over-dialog");
     this.turnTransitionTitle = document.querySelector("#turn-transition-title");
@@ -39,6 +37,10 @@ export class ScreenController {
     this.confirmTurnBtn = document.querySelector("#confirm-turn");
     this.playAgainBtn = document.querySelector("#play-again-btn");
     this.mainMenuBtn = document.querySelector("#main-menu-btn");
+
+    this.quitDialog = document.querySelector("#quit-dialog");
+    this.quitCancelBtn = document.querySelector("#quit-cancel");
+    this.quitConfirmBtn = document.querySelector("#quit-confirm");
 
     this.setupMenuEvents();
     this.setupGlobalKeyboard();
@@ -82,8 +84,11 @@ export class ScreenController {
 
     this.confirmTurnBtn.addEventListener("click", () => {
       this.turnTransition.close();
-      this.coverDiv.hidden = true;
-      this.coverDiv.classList.remove("opaque");
+    });
+
+    // Runs however the turn screen closes. Browsers don't reliably let a page
+    // block Escape on a modal dialog, so Escape counts as READY.
+    this.turnTransition.addEventListener("close", () => {
       if (this.pendingTurnCallback) {
         const cb = this.pendingTurnCallback;
         this.pendingTurnCallback = null;
@@ -93,22 +98,54 @@ export class ScreenController {
 
     this.playAgainBtn.addEventListener("click", () => {
       this.gameOverDialog.close();
-      this.coverDiv.hidden = true;
       this.startGame(...this.lastGameSettings);
     });
 
     this.mainMenuBtn.addEventListener("click", () => {
-      this.gameOverDialog.close();
-      this.coverDiv.hidden = true;
-      this.renderer.clearAll();
-      this.menuDialog.show();
+      this.returnToMainMenu();
     });
+
+    this.renderer.onMainMenu = () => {
+      // Nothing to lose once the game is over
+      if (this.app.currentState === "GAME_OVER") this.returnToMainMenu();
+      else this.quitDialog.showModal();
+    };
+
+    this.quitCancelBtn.addEventListener("click", () => {
+      this.quitDialog.close();
+    });
+
+    this.quitConfirmBtn.addEventListener("click", () => {
+      this.quitDialog.close();
+      this.returnToMainMenu();
+    });
+  }
+
+  returnToMainMenu() {
+    ++this.gameToken;
+    this.app.quit();
+    this.pendingTurnCallback = null;
+    this.placementPlayer = null;
+    for (const dialog of [this.turnTransition, this.gameOverDialog, this.quitDialog]) {
+      if (dialog.open) dialog.close();
+    }
+    this.renderer.clearAll();
+    this.menuDialog.show();
+  }
+
+  // setTimeout that is dropped if the game is restarted or left meanwhile
+  later(callback, ms) {
+    const token = this.gameToken;
+    setTimeout(() => {
+      if (token === this.gameToken) callback();
+    }, ms);
   }
 
   setupGlobalKeyboard() {
     document.addEventListener("keydown", (e) => {
       if (e.key === "r" || e.key === "R") {
         if (e.target instanceof HTMLInputElement) return;
+        if (this.turnTransition.open || this.quitDialog.open) return;
         if (this.app.currentState !== "PLACEMENT") return;
         if (!this.placementPlayer) return;
         this.rotatePlacement();
@@ -122,6 +159,7 @@ export class ScreenController {
 
   startGame(isPVP, p1Name, p2Name, p1Color, difficulty) {
     this.lastGameSettings = [isPVP, p1Name, p2Name, p1Color, difficulty];
+    ++this.gameToken;
     this.app.reset(isPVP, p1Name, p2Name, p1Color, difficulty);
     this.bluePlaced = false;
     this.placementPlayer = null;
@@ -202,15 +240,13 @@ export class ScreenController {
     }
   }
 
-  // Shows the hand-off screen. The cover is made opaque so the next player
-  // can't see anything on the boards behind the dialog.
+  // Shows the hand-off screen. It's modal with an opaque backdrop, so the
+  // next player can't see or reach anything on the boards behind it.
   showTurnTransition(title, subtitle, callback = null) {
     this.pendingTurnCallback = callback;
     this.turnTransitionTitle.textContent = title;
     this.turnTransitionSubtitle.textContent = subtitle;
-    this.coverDiv.classList.add("opaque");
-    this.coverDiv.hidden = false;
-    this.turnTransition.show();
+    this.turnTransition.showModal();
   }
 
   // Re-renders both boards with every ship hidden, ahead of a PVP hand-off
@@ -426,7 +462,7 @@ export class ScreenController {
     if (firstPlayer.isBot()) {
       this.renderer.setStatus(`${name} IS THINKING...`, `status-${firstPlayer.getColor().toLowerCase()}`);
       this.renderer.setActivePlayer(firstPlayer, this.app.getCurrentState());
-      setTimeout(() => this.runBotTurn(), 1000);
+      this.later(() => this.runBotTurn(), 1000);
     } else {
       this.renderer.setActivePlayer(firstPlayer, this.app.getCurrentState());
       if (this.app.gameMode === "PVP") {
@@ -464,7 +500,7 @@ export class ScreenController {
     this.renderPlayBoards();
 
     if (player.isBot()) {
-      setTimeout(() => this.runBotTurn(), 1000);
+      this.later(() => this.runBotTurn(), 1000);
     }
   }
 
@@ -483,7 +519,7 @@ export class ScreenController {
 
       this.renderer.updateCell(x, y, opponent);
       this.renderer.renderGraveyard(opponent);
-      this.renderer.updateScoreboard(opponent);
+      this.renderer.updateScoreboards();
 
       if (result.won) {
         this.endGame();
@@ -517,7 +553,7 @@ export class ScreenController {
       this.renderer.setStatus(`${nextName} IS THINKING...`, `status-${nextPlayer.getColor().toLowerCase()}`);
       this.renderer.setActivePlayer(nextPlayer, this.app.getCurrentState());
       this.renderPlayBoards();
-      setTimeout(() => this.runBotTurn(), 1000);
+      this.later(() => this.runBotTurn(), 1000);
     } else {
       if (this.app.gameMode === "PVP") {
         this.hideAllShips();
@@ -541,7 +577,7 @@ export class ScreenController {
     const opponent = this.app.getOpponent(bot);
     this.renderer.updateCell(result.x, result.y, opponent);
     this.renderer.renderGraveyard(opponent);
-    this.renderer.updateScoreboard(opponent);
+    this.renderer.updateScoreboards();
 
     if (result.won) {
       this.endGame();
@@ -553,7 +589,7 @@ export class ScreenController {
         ? `SHIP SUNK! ${bot.getName().toUpperCase()} ATTACKS AGAIN`
         : `HIT! ${bot.getName().toUpperCase()} ATTACKS AGAIN`;
       this.renderer.setStatus(msg, `status-${bot.getColor().toLowerCase()}`);
-      setTimeout(() => this.runBotTurn(), 800);
+      this.later(() => this.runBotTurn(), 800);
     } else {
       const nextPlayer = this.app.currentPlayer;
       this.afterTurnEnd(nextPlayer);
@@ -575,11 +611,10 @@ export class ScreenController {
     this.renderer.renderBoard(this.app.bluePlayer, false, true, false);
     this.renderer.renderBoard(this.app.redPlayer, false, true, false);
 
-    setTimeout(() => {
+    this.later(() => {
       this.winnerText.textContent = `${winnerName} WINS!`;
       this.winnerText.className = `title crt-text ${color}`;
-      this.gameOverDialog.show();
-      this.coverDiv.hidden = false;
+      this.gameOverDialog.showModal();
     }, 1500);
   }
 }

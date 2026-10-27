@@ -1,5 +1,3 @@
-import { GameBoard } from "./gameboard.js";
-
 const SHIP_NAMES = ["PATROL", "SUB", "CRUISER", "BATTLESHIP", "CARRIER"];
 const SHIP_LENGTHS = [2, 3, 3, 4, 5];
 
@@ -20,6 +18,7 @@ export class Renderer {
     this.onRandomize = null;
     this.onStartGame = null;
     this.onRotate = null;
+    this.onMainMenu = null;
 
     // Transparent 1x1 canvas used to hide the default drag ghost image
     const canvas = document.createElement("canvas");
@@ -42,6 +41,14 @@ export class Renderer {
     this.statusBar = document.createElement("div");
     this.statusBar.id = "status-bar";
     this.header.appendChild(this.statusBar);
+
+    const menuBtn = document.createElement("button");
+    menuBtn.id = "header-menu-btn";
+    menuBtn.textContent = "MENU";
+    menuBtn.addEventListener("click", () => {
+      if (this.onMainMenu) this.onMainMenu();
+    });
+    this.header.appendChild(menuBtn);
 
     this.mainContent.appendChild(this.header);
 
@@ -223,7 +230,7 @@ export class Renderer {
       cell.disabled = true;
     }
 
-    this.updateScoreboard(player);
+    this.updateScoreboards();
   }
 
   renderGraveyard(player) {
@@ -269,20 +276,20 @@ export class Renderer {
     graveyard.appendChild(shipsContainer);
   }
 
-  updateScoreboard(player) {
-    const color = player.getColor().toLowerCase();
-    const panel = this.playerPanels[color];
-    if (!panel) return;
+  // Each panel shows how many hits that player has landed on the opponent
+  updateScoreboards() {
+    for (const player of [this.app.player1, this.app.player2]) {
+      const panel = this.playerPanels[player.getColor().toLowerCase()];
+      const score = panel?.querySelector(".score");
+      if (!score) continue;
 
-    const score = panel.querySelector(".score");
-    if (!score) return;
-
-    const ships = player.getGameBoard().getShips();
-    let totalHits = 0;
-    for (const ship of ships) {
-      totalHits += ship.getHits();
+      const ships = this.app.getOpponent(player).getGameBoard().getShips();
+      let totalHits = 0;
+      for (const ship of ships) {
+        totalHits += ship.getHits();
+      }
+      score.textContent = `${totalHits} HITS`;
     }
-    score.textContent = `${totalHits} HITS`;
   }
 
   setStatus(text, className = "") {
@@ -450,7 +457,7 @@ export class Renderer {
 
     const startBtn = document.createElement("button");
     startBtn.textContent = "READY";
-    startBtn.id = "placement-ready-btn";
+    startBtn.className = "placement-ready-btn";
     startBtn.disabled = true;
     startBtn.addEventListener("click", () => {
       if (this.onStartGame) this.onStartGame();
@@ -479,7 +486,7 @@ export class Renderer {
       item.draggable = true;
     });
 
-    const readyBtn = panel.querySelector("#placement-ready-btn");
+    const readyBtn = panel.querySelector(".placement-ready-btn");
     if (readyBtn) {
       readyBtn.disabled = placedShipIds.length < 5;
     }

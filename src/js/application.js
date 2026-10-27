@@ -134,6 +134,11 @@ export class Application {
     );
   }
 
+  // Leaving a game: no moves are accepted until the next reset()
+  quit() {
+    this.currentState = "MENU";
+  }
+
   startPlaying() {
     if (this.isPlacementComplete()) {
       this.currentState = "PLAYING";

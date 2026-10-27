@@ -8,15 +8,24 @@ import { ScreenController } from "../js/screen-controller.js";
 
 const template = fs.readFileSync(
   path.join(process.cwd(), "src/template.html"),
-  "utf8"
+  "utf8",
 );
 
-// jsdom doesn't implement <dialog> methods
+// jsdom doesn't implement <dialog> methods. showModal marks the dialog so
+// tests can check it was opened modally (which makes the page inert).
 HTMLDialogElement.prototype.show = function () {
   this.setAttribute("open", "");
+  delete this.dataset.modal;
+};
+HTMLDialogElement.prototype.showModal = function () {
+  this.setAttribute("open", "");
+  this.dataset.modal = "true";
 };
 HTMLDialogElement.prototype.close = function () {
+  if (!this.hasAttribute("open")) return;
   this.removeAttribute("open");
+  delete this.dataset.modal;
+  this.dispatchEvent(new Event("close"));
 };
 
 let app;
@@ -26,11 +35,12 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 const click = (sel) => $(sel).click();
 const isOpen = (sel) => $(sel).hasAttribute("open");
+const isModal = (sel) => isOpen(sel) && $(sel).dataset.modal === "true";
 const cell = (color, x, y) =>
   $(`.player-panel.${color} .cell[data-x="${x}"][data-y="${y}"]`);
 const panelButton = (color, text) =>
   $$(`.player-panel.${color} .placement-controls button`).find(
-    (b) => b.textContent === text
+    (b) => b.textContent === text,
   );
 
 function startPVP(p1 = "", p2 = "") {
@@ -95,7 +105,9 @@ test("Rotation indicator reflects the current orientation", () => {
 test("Typing R in a name field doesn't rotate", () => {
   click("#pvb-btn");
   const input = $("#pvb-player");
-  input.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+  input.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "r", bubbles: true }),
+  );
   expect(controller.placementIsHorizontal).toBe(true);
 });
 
@@ -141,7 +153,6 @@ test("Red only needs one READY press after blue finishes placing", () => {
   click("#confirm-turn");
 
   expect(isOpen("#turn-transition")).toBe(false);
-  expect($("#cover").hidden).toBe(true);
   expect(controller.placementPlayer).toBe(app.redPlayer);
 });
 
@@ -152,10 +163,10 @@ test("Blue's fleet is hidden while handing over to red", () => {
 
   expect($$(".player-panel.blue .cell.ship-blue")).toHaveLength(0);
   expect($(".player-panel.blue").classList.contains("hidden-board")).toBe(true);
-  expect($("#cover").classList.contains("opaque")).toBe(true);
+  expect(isModal("#turn-transition")).toBe(true);
 });
 
-test("Ships are hidden behind an opaque cover between PVP turns", () => {
+test("Ships are hidden behind a modal turn screen between PVP turns", () => {
   startPVP();
   click("#confirm-turn");
   randomizeAndReady("blue");
@@ -177,8 +188,7 @@ test("Ships are hidden behind an opaque cover between PVP turns", () => {
   }
   cell("red", missX, missY).click();
 
-  expect(isOpen("#turn-transition")).toBe(true);
-  expect($("#cover").classList.contains("opaque")).toBe(true);
+  expect(isModal("#turn-transition")).toBe(true);
   expect($$(".cell.ship-blue, .cell.ship-red")).toHaveLength(0);
 
   click("#confirm-turn");
@@ -225,4 +235,164 @@ test("PLAY AGAIN restarts with the same players and mode", () => {
   expect(app.player1.getName()).toBe("ALICE");
   expect(app.player2.getName()).toBe("BOB");
   expect($("#turn-transition-title").textContent).toBe("ALICE'S TURN");
+});
+
+// Starts a PVP game and plays it until blue wins without missing
+function playPVPUntilBlueWins() {
+  startPVP();
+  click("#confirm-turn");
+  randomizeAndReady("blue");
+  click("#confirm-turn");
+  randomizeAndReady("red");
+  click("#confirm-turn");
+
+  const redBoard = app.redPlayer.getGameBoard();
+  for (let x = 0; x < 10; ++x) {
+    for (let y = 0; y < 10; ++y) {
+      if (redBoard.getShipAt(x, y)) cell("red", x, y).click();
+    }
+  }
+  jest.runAllTimers();
+}
+
+// Starts PVB as red, so the bot (blue) has a move queued when this returns
+function startPVBWithBotThinking() {
+  startPVB("RED", "HARD");
+  click("#confirm-turn");
+  randomizeAndReady("red");
+}
+
+const shotsTaken = (player) => {
+  const board = player.getGameBoard();
+  let shots = 0;
+  for (let x = 0; x < 10; ++x) {
+    for (let y = 0; y < 10; ++y) if (board.isShot(x, y)) ++shots;
+  }
+  return shots;
+};
+
+test("Each scoreboard shows the hits that player has landed", () => {
+  startPVP();
+  click("#confirm-turn");
+  randomizeAndReady("blue");
+  click("#confirm-turn");
+  randomizeAndReady("red");
+  click("#confirm-turn");
+
+  const redBoard = app.redPlayer.getGameBoard();
+  const { startX, startY } = redBoard.getShips()[4].getProperties();
+  cell("red", startX, startY).click();
+
+  expect($(".player-panel.blue .score").textContent).toBe("1 HITS");
+  expect($(".player-panel.red .score").textContent).toBe("0 HITS");
+});
+
+test("Closing the turn screen any way (e.g. Escape) acts as READY", () => {
+  startPVP();
+  click("#confirm-turn");
+  randomizeAndReady("blue");
+
+  $("#turn-transition").close(); // what Escape does to a modal dialog
+  expect(controller.placementPlayer).toBe(app.redPlayer);
+  expect(isOpen("#turn-transition")).toBe(false);
+});
+
+test("R is ignored while the turn screen is open", () => {
+  startPVP();
+  click("#confirm-turn");
+  randomizeAndReady("blue"); // red's turn screen is now open
+
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "r" }));
+  expect(controller.placementIsHorizontal).toBe(true);
+});
+
+test("The first turn screen opens as a modal dialog", () => {
+  startPVP();
+  expect(isModal("#turn-transition")).toBe(true);
+});
+
+test("Game-over dialog is modal", () => {
+  playPVPUntilBlueWins();
+  expect(isModal("#game-over-dialog")).toBe(true);
+});
+
+test("Placement has no duplicate element IDs", () => {
+  startPVP();
+  const ids = $$("[id]").map((e) => e.id);
+  expect(new Set(ids).size).toBe(ids.length);
+});
+
+// MAIN MENU BUTTON -----------------------------------------------------------
+
+test("MENU during a game asks to confirm, and CANCEL keeps playing", () => {
+  startPVP();
+  click("#confirm-turn");
+  click("#header-menu-btn");
+
+  expect(isModal("#quit-dialog")).toBe(true);
+  click("#quit-cancel");
+
+  expect(isOpen("#quit-dialog")).toBe(false);
+  expect(isOpen("#main-menu")).toBe(false);
+  expect(app.getCurrentState()).toBe("PLACEMENT");
+  expect($(".player-panel.blue .gameboard")).not.toBeNull();
+});
+
+test("Quitting returns to the main menu and cancels the bot's queued move", () => {
+  startPVBWithBotThinking();
+  const human = app.redPlayer;
+  expect($("#status-bar").textContent).toContain("THINKING");
+
+  click("#header-menu-btn");
+  click("#quit-confirm");
+  jest.runAllTimers();
+
+  expect(isOpen("#main-menu")).toBe(true);
+  expect($("#main-content").children).toHaveLength(0);
+  expect(app.getCurrentState()).toBe("MENU");
+  expect(shotsTaken(human)).toBe(0);
+});
+
+test("Timers from a quit game don't affect the next game", () => {
+  startPVBWithBotThinking();
+  click("#header-menu-btn");
+  click("#quit-confirm");
+
+  startPVP(); // new game before the old bot timer fires
+  jest.runAllTimers();
+
+  expect(shotsTaken(app.player1)).toBe(0);
+  expect(shotsTaken(app.player2)).toBe(0);
+  expect(app.getCurrentState()).toBe("PLACEMENT");
+});
+
+test("Quitting during the game-over delay doesn't open the dialog later", () => {
+  startPVP();
+  click("#confirm-turn");
+  randomizeAndReady("blue");
+  click("#confirm-turn");
+  randomizeAndReady("red");
+  click("#confirm-turn");
+  const redBoard = app.redPlayer.getGameBoard();
+  for (let x = 0; x < 10; ++x) {
+    for (let y = 0; y < 10; ++y) {
+      if (redBoard.getShipAt(x, y)) cell("red", x, y).click();
+    }
+  }
+
+  click("#header-menu-btn"); // game is over, so no confirmation
+  jest.runAllTimers();
+
+  expect(isOpen("#quit-dialog")).toBe(false);
+  expect(isOpen("#game-over-dialog")).toBe(false);
+  expect(isOpen("#main-menu")).toBe(true);
+});
+
+test("MENU after the game is over goes straight to the main menu", () => {
+  playPVPUntilBlueWins();
+  click("#header-menu-btn");
+
+  expect(isOpen("#quit-dialog")).toBe(false);
+  expect(isOpen("#game-over-dialog")).toBe(false);
+  expect(isOpen("#main-menu")).toBe(true);
 });
