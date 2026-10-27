@@ -8,7 +8,8 @@
     "start": "node --import tsx ./node_modules/webpack-cli/bin/cli.js serve --open --config webpack.dev.js",
     "build": "node --import tsx ./node_modules/webpack-cli/bin/cli.js --config webpack.prod.js",
     "dev": "webpack serve",
-    "deploy": "git subtree push --prefix dist origin gh-pages"
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist -m \"Deployment commit\""
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.29.5",
     "css-loader": "^7.1.4",
+    "gh-pages": "^6.3.0",
     "html-loader": "^5.1.0",
     "html-webpack-plugin": "^5.6.6",
     "jest": "^30.4.2",
