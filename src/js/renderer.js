@@ -105,8 +105,11 @@ export class Renderer {
     const board = player.getGameBoard();
     const grid = board.getBoard();
 
-    for (let x = 0; x < grid.length; x++) {
-      for (let y = 0; y < grid[x].length; y++) {
+    // grid[x][y]: x is the column, y is the row. Cells are appended row by
+    // row, so y must be the outer loop for horizontal ships to render
+    // left-to-right.
+    for (let y = 0; y < board.boardSize; y++) {
+      for (let x = 0; x < board.boardSize; x++) {
         const cell = document.createElement("button");
         cell.classList.add("cell");
         cell.dataset.x = x;
@@ -160,11 +163,10 @@ export class Renderer {
             e.preventDefault();
             if (this.onCellClick) this.onCellClick(player, x, y, true, true);
           });
+          // Only hijack the scroll wheel while a ship is being placed, so
+          // the page can still scroll over the board otherwise.
           cell.addEventListener("wheel", (e) => {
-            if (this.onRotate) {
-              e.preventDefault();
-              this.onRotate();
-            }
+            if (this.onRotate && this.onRotate(true)) e.preventDefault();
           }, { passive: false });
 
           if (showShips && tile.ship !== null && !tile.isShot) {
@@ -172,11 +174,13 @@ export class Renderer {
             cell.classList.add("draggable-ship");
             cell.addEventListener("dragstart", (e) => {
               const shipId = tile.ship.getID();
+              const props = tile.ship.getProperties();
+              const grabOffset = x - props.startX + (y - props.startY);
               e.dataTransfer.setData("text/plain", String(shipId));
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setDragImage(this.dragGhost, 0, 0);
               cell.classList.add("dragging");
-              if (this.onShipPickup) this.onShipPickup(shipId);
+              if (this.onShipPickup) this.onShipPickup(shipId, grabOffset);
             });
             cell.addEventListener("dragend", () => {
               cell.classList.remove("dragging");
@@ -420,8 +424,11 @@ export class Renderer {
     tray.appendChild(shipList);
 
     const rotationDiv = document.createElement("div");
-    rotationDiv.id = "rotation-indicator";
-    rotationDiv.innerHTML = `(R or scroll to rotate)`;
+    rotationDiv.className = "rotation-indicator";
+    const rotationMode = document.createElement("span");
+    rotationMode.className = "rotation-mode";
+    rotationMode.textContent = "HORIZONTAL";
+    rotationDiv.append(rotationMode, " (R or scroll to rotate)");
     tray.appendChild(rotationDiv);
 
     const controls = document.createElement("div");
@@ -479,10 +486,9 @@ export class Renderer {
   }
 
   updateRotationIndicator(isHorizontal) {
-    const text = document.querySelector("#rotation-mode-text");
-    if (text) {
+    document.querySelectorAll(".rotation-mode").forEach((text) => {
       text.textContent = isHorizontal ? "HORIZONTAL" : "VERTICAL";
-    }
+    });
   }
 
   enableBoard(player) {

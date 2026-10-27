@@ -255,13 +255,15 @@ dialog[open] {
 }
 
 #cover {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
+  position: fixed;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 2;
+}
+
+/* Turn hand-offs: fully hide the boards from the next player */
+#cover.opaque {
+  background-color: var(--bg-dark);
 }
 
 /* ============================================
@@ -800,6 +802,7 @@ button:disabled {
 
 .placement-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
 }
@@ -811,19 +814,19 @@ button:disabled {
 }
 
 /* Rotation indicator */
-#rotation-indicator {
+.rotation-indicator {
   font-size: 12px;
   text-align: center;
   color: var(--text-dim);
   letter-spacing: 1px;
 }
 
-#rotation-indicator .rotation-mode {
+.rotation-indicator .rotation-mode {
   color: var(--blue);
   font-weight: bold;
 }
 
-.player-panel.red #rotation-indicator .rotation-mode {
+.player-panel.red .rotation-indicator .rotation-mode {
   color: var(--red);
 }
 
@@ -971,6 +974,19 @@ button:disabled {
 
   .ship-tray {
     max-width: 100%;
+  }
+
+  #main-content {
+    padding: 12px;
+  }
+
+  #game-container {
+    width: 100%;
+  }
+
+  .player-panel {
+    width: 100%;
+    padding: 12px;
   }
 }
 

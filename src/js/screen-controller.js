@@ -13,7 +13,10 @@ export class ScreenController {
     this.placementShipId = null;
     this.placementIsHorizontal = true;
     this.placementHoverPos = null;
+    // Which segment of the ship the cursor is holding (0 = head)
+    this.placementGrabOffset = 0;
     this.bluePlaced = false;
+    this.lastGameSettings = null;
 
     this.menuDialog = document.querySelector("#main-menu");
     this.pvpDialog = document.querySelector("#pvp-menu");
@@ -80,6 +83,7 @@ export class ScreenController {
     this.confirmTurnBtn.addEventListener("click", () => {
       this.turnTransition.close();
       this.coverDiv.hidden = true;
+      this.coverDiv.classList.remove("opaque");
       if (this.pendingTurnCallback) {
         const cb = this.pendingTurnCallback;
         this.pendingTurnCallback = null;
@@ -90,8 +94,7 @@ export class ScreenController {
     this.playAgainBtn.addEventListener("click", () => {
       this.gameOverDialog.close();
       this.coverDiv.hidden = true;
-      this.renderer.clearAll();
-      this.menuDialog.show();
+      this.startGame(...this.lastGameSettings);
     });
 
     this.mainMenuBtn.addEventListener("click", () => {
@@ -105,13 +108,10 @@ export class ScreenController {
   setupGlobalKeyboard() {
     document.addEventListener("keydown", (e) => {
       if (e.key === "r" || e.key === "R") {
+        if (e.target instanceof HTMLInputElement) return;
         if (this.app.currentState !== "PLACEMENT") return;
-        this.placementIsHorizontal = !this.placementIsHorizontal;
-        this.renderer.updateRotationIndicator(this.placementIsHorizontal);
-        if (this.placementHoverPos) {
-          this.renderer.clearPlacementPreview();
-          this.updatePlacementPreview();
-        }
+        if (!this.placementPlayer) return;
+        this.rotatePlacement();
       }
     });
   }
@@ -121,10 +121,13 @@ export class ScreenController {
   // ============================================
 
   startGame(isPVP, p1Name, p2Name, p1Color, difficulty) {
+    this.lastGameSettings = [isPVP, p1Name, p2Name, p1Color, difficulty];
     this.app.reset(isPVP, p1Name, p2Name, p1Color, difficulty);
     this.bluePlaced = false;
+    this.placementPlayer = null;
     this.placementShipId = null;
     this.placementHoverPos = null;
+    this.placementGrabOffset = 0;
     this.placementIsHorizontal = true;
     this.renderer.buildGameLayout();
 
@@ -171,10 +174,7 @@ export class ScreenController {
     this.renderer.hideOpponentBoard(this.app.redPlayer);
     this.renderer.showOpponentBoard(this.app.bluePlayer);
 
-    this.turnTransitionTitle.textContent = `${name}'S TURN`;
-    this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
-    this.coverDiv.hidden = false;
-    this.turnTransition.show();
+    this.showTurnTransition(`${name}'S TURN`, "PLACE YOUR SHIPS");
   }
 
   startRedPlacement() {
@@ -198,11 +198,43 @@ export class ScreenController {
       this.renderer.updateShipTray(this.placementPlayer, [0, 1, 2, 3, 4]);
       this.beginPlayingPhase();
     } else {
-      this.turnTransitionTitle.textContent = `${name}'S TURN`;
-      this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
-      this.coverDiv.hidden = false;
-      this.turnTransition.show();
+      this.showTurnTransition(`${name}'S TURN`, "PLACE YOUR SHIPS");
     }
+  }
+
+  // Shows the hand-off screen. The cover is made opaque so the next player
+  // can't see anything on the boards behind the dialog.
+  showTurnTransition(title, subtitle, callback = null) {
+    this.pendingTurnCallback = callback;
+    this.turnTransitionTitle.textContent = title;
+    this.turnTransitionSubtitle.textContent = subtitle;
+    this.coverDiv.classList.add("opaque");
+    this.coverDiv.hidden = false;
+    this.turnTransition.show();
+  }
+
+  // Re-renders both boards with every ship hidden, ahead of a PVP hand-off
+  hideAllShips() {
+    this.renderer.renderBoard(this.app.bluePlayer, false, false, false);
+    this.renderer.renderBoard(this.app.redPlayer, false, false, false);
+  }
+
+  rotatePlacement() {
+    this.placementIsHorizontal = !this.placementIsHorizontal;
+    this.renderer.updateRotationIndicator(this.placementIsHorizontal);
+    if (this.placementHoverPos) {
+      this.renderer.clearPlacementPreview();
+      this.updatePlacementPreview();
+    }
+  }
+
+  // Start cell of the ship being placed, given the hovered cell and which
+  // segment of the ship is being held
+  getPlacementStart(x, y) {
+    if (this.placementIsHorizontal) {
+      return { x: x - this.placementGrabOffset, y };
+    }
+    return { x, y: y - this.placementGrabOffset };
   }
 
   setupPlacementCallbacks() {
@@ -211,10 +243,11 @@ export class ScreenController {
       if (player !== this.placementPlayer) return;
 
       if (this.placementShipId !== null) {
+        const start = this.getPlacementStart(x, y);
         const placed = player.getGameBoard().placeShip(
           this.placementShipId,
-          x,
-          y,
+          start.x,
+          start.y,
           this.placementIsHorizontal
         );
 
@@ -224,6 +257,7 @@ export class ScreenController {
           const placedIds = this.getPlacedShipIds(player);
           this.renderer.updateShipTray(player, placedIds);
           this.placementShipId = null;
+          this.placementGrabOffset = 0;
           this.renderer.clearPlacementPreview();
 
           // Don't auto-complete when all 5 are placed — let the player
@@ -234,7 +268,11 @@ export class ScreenController {
         // so the player can reposition it.
         const ship = player.getGameBoard().getShipAt(x, y);
         if (ship) {
-          this.renderer.onShipPickup(ship.getID());
+          const props = ship.getProperties();
+          this.renderer.onShipPickup(
+            ship.getID(),
+            x - props.startX + (y - props.startY)
+          );
           this.placementHoverPos = { x, y };
           this.renderer.clearPlacementPreview();
           this.updatePlacementPreview();
@@ -259,17 +297,19 @@ export class ScreenController {
 
     this.renderer.onShipDragStart = (shipId) => {
       this.placementShipId = shipId;
+      this.placementGrabOffset = 0;
       if (this.placementHoverPos) {
         this.renderer.clearPlacementPreview();
         this.updatePlacementPreview();
       }
     };
 
-    this.renderer.onShipPickup = (shipId) => {
+    this.renderer.onShipPickup = (shipId, grabOffset = 0) => {
       // Picking up a ship (including an already-placed one) selects it
       // for repositioning. The gameboard.placeShip call clears the old
       // position automatically before placing the new one.
       this.placementShipId = shipId;
+      this.placementGrabOffset = grabOffset;
       const player = this.placementPlayer;
       const ship = player.getGameBoard().getShips()[shipId];
       const props = ship.getProperties();
@@ -288,16 +328,16 @@ export class ScreenController {
       this.renderer.renderGraveyard(player);
       this.renderer.updateShipTray(player, [0, 1, 2, 3, 4]);
       this.placementShipId = null;
+      this.placementGrabOffset = 0;
       this.renderer.clearPlacementPreview();
     };
 
-    this.renderer.onRotate = () => {
-      this.placementIsHorizontal = !this.placementIsHorizontal;
-      this.renderer.updateRotationIndicator(this.placementIsHorizontal);
-      if (this.placementHoverPos) {
-        this.renderer.clearPlacementPreview();
-        this.updatePlacementPreview();
-      }
+    // Returns whether it rotated, so the wheel only rotates while a ship
+    // is selected and otherwise scrolls the page.
+    this.renderer.onRotate = (fromWheel = false) => {
+      if (fromWheel && this.placementShipId === null) return false;
+      this.rotatePlacement();
+      return true;
     };
 
     this.renderer.onStartGame = () => {
@@ -312,7 +352,10 @@ export class ScreenController {
 
   updatePlacementPreview() {
     if (this.placementShipId === null || !this.placementHoverPos) return;
-    const { x, y } = this.placementHoverPos;
+    const { x, y } = this.getPlacementStart(
+      this.placementHoverPos.x,
+      this.placementHoverPos.y
+    );
     const player = this.placementPlayer;
     const canPlace = player.getGameBoard().canPlaceShip(
       this.placementShipId,
@@ -351,11 +394,8 @@ export class ScreenController {
         this.renderer.updateShipTray(this.app.redPlayer, [0, 1, 2, 3, 4]);
         this.beginPlayingPhase();
       } else {
-        this.pendingTurnCallback = () => this.startRedPlacement();
-        this.turnTransitionTitle.textContent = `${this.app.redPlayer.getName().toUpperCase()}'S TURN`;
-        this.turnTransitionSubtitle.textContent = "PLACE YOUR SHIPS";
-        this.coverDiv.hidden = false;
-        this.turnTransition.show();
+        // startRedPlacement hides blue's fleet and shows red's turn screen
+        this.startRedPlacement();
       }
     } else {
       this.beginPlayingPhase();
@@ -390,11 +430,10 @@ export class ScreenController {
     } else {
       this.renderer.setActivePlayer(firstPlayer, this.app.getCurrentState());
       if (this.app.gameMode === "PVP") {
-        this.pendingTurnCallback = () => this.startPlayerTurn(firstPlayer);
-        this.turnTransitionTitle.textContent = `${name}'S TURN`;
-        this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
-        this.coverDiv.hidden = false;
-        this.turnTransition.show();
+        this.hideAllShips();
+        this.showTurnTransition(`${name}'S TURN`, "ATTACK THE ENEMY", () =>
+          this.startPlayerTurn(firstPlayer)
+        );
       } else {
         this.startPlayerTurn(firstPlayer);
       }
@@ -403,13 +442,17 @@ export class ScreenController {
 
   renderPlayBoards() {
     const currentPlayer = this.app.currentPlayer;
-    const opponent = this.app.getOpponent(currentPlayer);
 
-    // During play, hide all ship positions on both boards.
-    // Disable the current player's own board (can't attack yourself).
-    // Enable only the opponent's board so the player knows where to click.
-    this.renderer.renderBoard(currentPlayer, false, false, false);
-    this.renderer.renderBoard(opponent, false, false, true);
+    // Humans see their own fleet: always in PVB, and only on their own turn
+    // in PVP (the hand-off screen hides it between turns). Only the board
+    // being attacked by a human is clickable.
+    for (const player of [this.app.player1, this.app.player2]) {
+      const showShips =
+        !player.isBot() &&
+        (this.app.gameMode === "PVB" || player === currentPlayer);
+      const interactive = player !== currentPlayer && !currentPlayer.isBot();
+      this.renderer.renderBoard(player, false, showShips, interactive);
+    }
   }
 
   startPlayerTurn(player) {
@@ -477,11 +520,10 @@ export class ScreenController {
       setTimeout(() => this.runBotTurn(), 1000);
     } else {
       if (this.app.gameMode === "PVP") {
-        this.pendingTurnCallback = () => this.startPlayerTurn(nextPlayer);
-        this.turnTransitionTitle.textContent = `${nextName}'S TURN`;
-        this.turnTransitionSubtitle.textContent = "ATTACK THE ENEMY";
-        this.coverDiv.hidden = false;
-        this.turnTransition.show();
+        this.hideAllShips();
+        this.showTurnTransition(`${nextName}'S TURN`, "ATTACK THE ENEMY", () =>
+          this.startPlayerTurn(nextPlayer)
+        );
       } else {
         this.startPlayerTurn(nextPlayer);
       }

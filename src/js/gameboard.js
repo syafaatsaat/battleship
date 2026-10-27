@@ -40,9 +40,9 @@ export class GameBoard {
     const shipsLetter = [
       "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
     ];
-    for (let x = 0; x < this.boardSize; ++x) {
+    for (let y = 0; y < this.boardSize; ++y) {
       let line = "";
-      for (let y = 0; y < this.boardSize; ++y) {
+      for (let x = 0; x < this.boardSize; ++x) {
         if (this.#board[x][y].ship === null) {
           line += "_";
         } else {

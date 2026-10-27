@@ -27,8 +27,9 @@ export class Player {
     return this.#gameBoard;
   }
 
+  // Difficulty is stored lowercase; the menu passes "EASY"/"MEDIUM"/"HARD"
   setDifficulty(difficulty) {
-    this.#difficulty = difficulty;
+    this.#difficulty = String(difficulty).toLowerCase();
   }
 
   getDifficulty() {
@@ -56,7 +57,7 @@ export class Player {
 
   setupBot(difficulty) {
     this.#isBot = true;
-    this.#difficulty = difficulty;
+    this.setDifficulty(difficulty);
     this.reset();
     this.#gameBoard.randomizeShips();
     this.#botMovePool = [...Array(this.#gameBoard.boardSize ** 2).keys()];
