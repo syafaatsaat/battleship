@@ -26,7 +26,8 @@ The classic game ‘Battleship’, with a retro CRT look, built with vanilla Jav
 
 ```bash
 npm install
-npm start        # dev server with live reload
+npm start        # dev server with live reload, opens a browser tab
+npm run dev      # same dev server, without opening a tab
 npm test         # run the Jest test suite
 npm run build    # production build into dist/
 npm run deploy   # build and publish dist/ to the gh-pages branch

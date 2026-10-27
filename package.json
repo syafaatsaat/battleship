@@ -7,7 +7,7 @@
     "test": "jest",
     "start": "node --import tsx ./node_modules/webpack-cli/bin/cli.js serve --open --config webpack.dev.js",
     "build": "node --import tsx ./node_modules/webpack-cli/bin/cli.js --config webpack.prod.js",
-    "dev": "webpack serve",
+    "dev": "node --import tsx ./node_modules/webpack-cli/bin/cli.js serve --config webpack.dev.js",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist -m \"Deployment commit\""
   },
