@@ -5,9 +5,11 @@ export class Player {
   #gameBoard;
   #isBot = false;
   #difficulty = "easy";
-  #botMovePool = [];
-  #botHits = [];
-  #botTargetQueue = [];
+  // What the bot knows about the opponent's board: botShots[x][y] is
+  // null (not fired at), "miss", "hit" (ship not sunk yet) or "sunk".
+  // Sunk ships are revealed on screen, so the bot may use their cells.
+  #botShots = [];
+  #botRemainingLengths = [];
   #color = "BLUE";
 
   constructor(name = "Player") {
@@ -50,9 +52,11 @@ export class Player {
 
   reset() {
     this.#gameBoard = new GameBoard();
-    this.#botMovePool = [];
-    this.#botHits = [];
-    this.#botTargetQueue = [];
+    const size = this.#gameBoard.boardSize;
+    this.#botShots = Array.from({ length: size }, () => Array(size).fill(null));
+    this.#botRemainingLengths = this.#gameBoard
+      .getShips()
+      .map((ship) => ship.getLength());
   }
 
   setupBot(difficulty) {
@@ -60,111 +64,163 @@ export class Player {
     this.setDifficulty(difficulty);
     this.reset();
     this.#gameBoard.randomizeShips();
-    this.#botMovePool = [...Array(this.#gameBoard.boardSize ** 2).keys()];
   }
 
+  // easy: random shots
+  // medium: random shots; after a hit, fires around it and follows the line
+  // hard: fires where the remaining ships are most likely to be
   botMakeMove(opponentBoard) {
-    if (this.#difficulty === "easy") return this.#easyBot(opponentBoard);
-    if (this.#difficulty === "medium") return this.#normalBot(opponentBoard);
-    return this.#hardBot(opponentBoard);
+    let move;
+    if (this.#difficulty === "easy") move = this.#randomCell();
+    else if (this.#difficulty === "medium") {
+      move = this.#lineTarget() ?? this.#randomCell();
+    } else move = this.#mostLikelyCell();
+    if (!move) return null;
+
+    const result = opponentBoard.receiveAttack(move.x, move.y);
+    this.#recordShot(move.x, move.y, result);
+    return { x: move.x, y: move.y, result };
   }
 
-  #easyBot(opponentBoard) {
-    if (this.#botMovePool.length === 0) return null;
-    const idx = Math.floor(Math.random() * this.#botMovePool.length);
-    const move = this.#botMovePool.splice(idx, 1)[0];
-    const size = opponentBoard.boardSize;
-    const x = Math.trunc(move / size);
-    const y = move % size;
-    return { x, y, result: opponentBoard.receiveAttack(x, y) };
+  #recordShot(x, y, result) {
+    if (!result.hit) {
+      this.#botShots[x][y] = "miss";
+      return;
+    }
+    this.#botShots[x][y] = "hit";
+    if (!result.ship.hasSunk()) return;
+
+    const { startX, startY, isHorizontal, length } =
+      result.ship.getProperties();
+    for (let i = 0; i < length; ++i) {
+      if (isHorizontal) this.#botShots[startX + i][startY] = "sunk";
+      else this.#botShots[startX][startY + i] = "sunk";
+    }
+    const idx = this.#botRemainingLengths.indexOf(length);
+    if (idx !== -1) this.#botRemainingLengths.splice(idx, 1);
   }
 
-  #normalBot(opponentBoard) {
-    const size = opponentBoard.boardSize;
-
-    // If we have target coordinates queued from a previous hit, pursue them
-    while (this.#botTargetQueue.length > 0) {
-      const { x, y } = this.#botTargetQueue.shift();
-      const flat = x * size + y;
-      const poolIdx = this.#botMovePool.indexOf(flat);
-      if (poolIdx === -1) continue;
-
-      this.#botMovePool.splice(poolIdx, 1);
-      const result = opponentBoard.receiveAttack(x, y);
-
-      if (result.hit) {
-        // Add adjacent cells to target queue
-        this.#addAdjacentTargets(x, y, size);
-      }
-      return { x, y, result };
-    }
-
-    // No targets queued, pick random
-    if (this.#botMovePool.length === 0) return null;
-    const idx = Math.floor(Math.random() * this.#botMovePool.length);
-    const move = this.#botMovePool.splice(idx, 1)[0];
-    const x = Math.trunc(move / size);
-    const y = move % size;
-    const result = opponentBoard.receiveAttack(x, y);
-
-    if (result.hit) {
-      this.#addAdjacentTargets(x, y, size);
-    }
-    return { x, y, result };
-  }
-
-  #hardBot(opponentBoard) {
-    const size = opponentBoard.boardSize;
-
-    // Hard bot: same as normal but uses parity (checkerboard) for random picks
-    // since the smallest ship is length 2
-    while (this.#botTargetQueue.length > 0) {
-      const { x, y } = this.#botTargetQueue.shift();
-      const flat = x * size + y;
-      const poolIdx = this.#botMovePool.indexOf(flat);
-      if (poolIdx === -1) continue;
-
-      this.#botMovePool.splice(poolIdx, 1);
-      const result = opponentBoard.receiveAttack(x, y);
-
-      if (result.hit) {
-        this.#addAdjacentTargets(x, y, size);
-      }
-      return { x, y, result };
-    }
-
-    // Pick a random cell but prefer parity cells (where x+y is even)
-    const parityCells = this.#botMovePool.filter(
-      (m) => (Math.trunc(m / size) + (m % size)) % 2 === 0
+  #isUnshot(x, y) {
+    const size = this.#botShots.length;
+    return (
+      x >= 0 && y >= 0 && x < size && y < size && this.#botShots[x][y] === null
     );
-    const pool = parityCells.length > 0 ? parityCells : this.#botMovePool;
-
-    if (pool.length === 0) return null;
-    const move = pool[Math.floor(Math.random() * pool.length)];
-    const poolIdx = this.#botMovePool.indexOf(move);
-    this.#botMovePool.splice(poolIdx, 1);
-
-    const x = Math.trunc(move / size);
-    const y = move % size;
-    const result = opponentBoard.receiveAttack(x, y);
-
-    if (result.hit) {
-      this.#addAdjacentTargets(x, y, size);
-    }
-    return { x, y, result };
   }
 
-  #addAdjacentTargets(x, y, size) {
-    const adj = [
-      { x: x - 1, y },
-      { x: x + 1, y },
-      { x, y: y - 1 },
-      { x, y: y + 1 },
-    ];
-    for (const a of adj) {
-      if (a.x >= 0 && a.x < size && a.y >= 0 && a.y < size) {
-        this.#botTargetQueue.push(a);
+  #isWounded(x, y) {
+    const size = this.#botShots.length;
+    return (
+      x >= 0 && y >= 0 && x < size && y < size && this.#botShots[x][y] === "hit"
+    );
+  }
+
+  #cellsWhere(predicate) {
+    const cells = [];
+    for (let x = 0; x < this.#botShots.length; ++x) {
+      for (let y = 0; y < this.#botShots.length; ++y) {
+        if (predicate(x, y)) cells.push({ x, y });
       }
     }
+    return cells;
+  }
+
+  #pickRandom(cells) {
+    if (cells.length === 0) return null;
+    return cells[Math.floor(Math.random() * cells.length)];
+  }
+
+  #randomCell() {
+    return this.#pickRandom(this.#cellsWhere((x, y) => this.#isUnshot(x, y)));
+  }
+
+  // Next shot around unsunk hits: extends a line of 2+ hits if possible,
+  // otherwise tries the neighbours of a single hit. Null if there are no
+  // unsunk hits.
+  #lineTarget() {
+    const wounded = this.#cellsWhere((x, y) => this.#isWounded(x, y));
+    if (wounded.length === 0) return null;
+
+    const directions = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    const lineEnds = [];
+    const neighbours = [];
+
+    for (const { x, y } of wounded) {
+      for (const [dx, dy] of directions) {
+        if (this.#isUnshot(x + dx, y + dy))
+          neighbours.push({ x: x + dx, y: y + dy });
+
+        // Part of a line: walk past the hits behind this one in this direction
+        if (!this.#isWounded(x - dx, y - dy)) continue;
+        let ex = x + dx;
+        let ey = y + dy;
+        while (this.#isWounded(ex, ey)) {
+          ex += dx;
+          ey += dy;
+        }
+        if (this.#isUnshot(ex, ey)) lineEnds.push({ x: ex, y: ey });
+      }
+    }
+
+    return this.#pickRandom(lineEnds) ?? this.#pickRandom(neighbours);
+  }
+
+  // Counts, for every unshot cell, how many ways the remaining ships could
+  // cover it without crossing a miss or a sunk ship. If there are unsunk
+  // hits, only placements through them count (weighted by how many hits they
+  // explain), so the bot finishes off wounded ships first.
+  #mostLikelyCell() {
+    const size = this.#botShots.length;
+    const scores = Array.from({ length: size }, () => Array(size).fill(0));
+    const hasWounded =
+      this.#cellsWhere((x, y) => this.#isWounded(x, y)).length > 0;
+
+    for (const length of this.#botRemainingLengths) {
+      for (const isHorizontal of [true, false]) {
+        const maxX = isHorizontal ? size - length : size - 1;
+        const maxY = isHorizontal ? size - 1 : size - length;
+        for (let sx = 0; sx <= maxX; ++sx) {
+          for (let sy = 0; sy <= maxY; ++sy) {
+            const cells = [];
+            let woundedCovered = 0;
+            let blocked = false;
+            for (let i = 0; i < length && !blocked; ++i) {
+              const x = isHorizontal ? sx + i : sx;
+              const y = isHorizontal ? sy : sy + i;
+              const state = this.#botShots[x][y];
+              if (state === "miss" || state === "sunk") blocked = true;
+              else if (state === "hit") ++woundedCovered;
+              cells.push({ x, y });
+            }
+            if (blocked) continue;
+            if (hasWounded && woundedCovered === 0) continue;
+
+            const weight = hasWounded ? woundedCovered : 1;
+            for (const { x, y } of cells) {
+              if (this.#botShots[x][y] === null) scores[x][y] += weight;
+            }
+          }
+        }
+      }
+    }
+
+    let best = [];
+    let bestScore = 0;
+    for (const cell of this.#cellsWhere((x, y) => this.#isUnshot(x, y))) {
+      const score = scores[cell.x][cell.y];
+      if (score > bestScore) {
+        bestScore = score;
+        best = [cell];
+      } else if (score === bestScore && bestScore > 0) {
+        best.push(cell);
+      }
+    }
+
+    // No placement fits (only possible on a non-standard board): fall back
+    return this.#pickRandom(best) ?? this.#lineTarget() ?? this.#randomCell();
   }
 }
