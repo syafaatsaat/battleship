@@ -1,4 +1,3 @@
-import { Ship } from "../js/ship.js";
 import { GameBoard } from "../js/gameboard.js";
 
 // PLACE SHIP -----------------------------------------------------------------

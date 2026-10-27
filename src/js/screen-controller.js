@@ -274,7 +274,7 @@ export class ScreenController {
   }
 
   setupPlacementCallbacks() {
-    this.renderer.onCellClick = (player, x, y, isOwnBoard, isDrop = false) => {
+    this.renderer.onCellClick = (player, x, y) => {
       if (this.app.currentState !== "PLACEMENT") return;
       if (player !== this.placementPlayer) return;
 
@@ -316,7 +316,7 @@ export class ScreenController {
       }
     };
 
-    this.renderer.onCellHover = (player, x, y, isOwnBoard) => {
+    this.renderer.onCellHover = (player, x, y) => {
       if (this.app.currentState !== "PLACEMENT") return;
       if (player !== this.placementPlayer) return;
       if (this.placementShipId === null) return;
@@ -505,7 +505,7 @@ export class ScreenController {
   }
 
   setupPlayCallbacks() {
-    this.renderer.onCellClick = (player, x, y, isOwnBoard) => {
+    this.renderer.onCellClick = (player, x, y) => {
       if (this.app.currentState !== "PLAYING") return;
 
       const attacker = this.app.currentPlayer;

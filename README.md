@@ -29,6 +29,7 @@ npm install
 npm start        # dev server with live reload, opens a browser tab
 npm run dev      # same dev server, without opening a tab
 npm test         # run the Jest test suite
+npm run lint     # check the code with ESLint
 npm run build    # production build into dist/
 npm run deploy   # build and publish dist/ to the gh-pages branch
 ```

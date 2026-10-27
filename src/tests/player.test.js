@@ -110,16 +110,21 @@ test.each(["MEDIUM", "HARD"])(
 // land next to the sunk ship about as often as chance.
 test("MEDIUM bot stops firing around a ship once it sinks", () => {
   let nextToSunk = 0;
-  const games = 200;
+  let games = 0;
 
-  for (let game = 0; game < games; ++game) {
+  for (let game = 0; game < 200; ++game) {
     const bot = makeBot("MEDIUM");
     const board = boardWithShip(0, 4, 4, true); // patrol at (4,4)-(5,4)
     const patrol = board.getShips()[0];
 
     while (!patrol.hasSunk()) bot.botMakeMove(board);
 
+    // The random search occasionally leaves the patrol for last, so the
+    // board is full once it sinks (~1 game in 5000). Nothing to check then.
     const next = bot.botMakeMove(board);
+    if (next === null) continue;
+
+    ++games;
     if (isAdjacent(next, { x: 4, y: 4 }) || isAdjacent(next, { x: 5, y: 4 })) {
       ++nextToSunk;
     }
